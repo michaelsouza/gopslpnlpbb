@@ -40,7 +40,7 @@ def _attach_callback_data(model, instance):
     model._solvars = [*model._svar.values(), *model._qvar.values()]
     model._clonemodel = None  # model.copy()
 
-    model._ncvxcuts = 100
+    model._ncvxcuts = 50
 
     model._incumbent = GRB.INFINITY
     model._callbacktime = 0
@@ -64,9 +64,14 @@ def mycallback(m, where):
             currentlb = m.cbGet(GRB.Callback.MIPNODE_OBJBND)
             if m._rootlb[0] == 0:
                 m._rootlb[0] = currentlb
+                #if m.cbGet(GRB.Callback.MIPNODE_STATUS) == GRB.OPTIMAL:
+                    # cutcvxviolations(m, where)
+                    # cutsdviolations(m, where)
             m._rootlb[1] = currentlb
             trace_progress(m._trace, m.cbGet(GRB.Callback.RUNTIME), 0, currentlb, GRB.INFINITY, None, GRB.INFINITY)
-            cutcvxviolations(m, where)
+        #elif currentnode < 100 and m.cbGet(GRB.Callback.MIPNODE_STATUS) == GRB.OPTIMAL:
+            # cutcvxviolations(m, where)
+            # cutsdviolations2(m, where)
 
     elif where == GRB.Callback.MIPSOL:
 
@@ -82,14 +87,8 @@ def mycallback(m, where):
             print(f"pass CB: {fstring} same plan as stored {m._incumbent}")
             assert abs(costmip - m._incumbent) < m.Params.MIPGap
             return
-            #if abs(costmip - m._incumbent) > m.Params.MIPGap:
-            #    print(f"{mystr} but different costs mipsol={costmip} feas={m._incumbent}", file=sys.stderr)
-            #    assert costmip < m._incumbent - m.Params.MIPGap
-            #else:
-            #    print(f"{mystr} same cost (inc={m._incumbent})")
-            #    return
 
-        # computesdviolations(m, where)
+        #### computesdviolations3(m, where)
 
         # check MINLP feasibility and compute the actual plan cost
         m._starttime = time.time()
@@ -103,10 +102,10 @@ def mycallback(m, where):
             print(fstring + f" t={violperiod}")
             addnogoodcut(m, _linearnorm(m._svar, activity, violperiod), currentnode)
             # todo a more flexible policy
-            if m._ncvxcuts > 0 or m._incumbent - costmip < 1e-1:
-                ncuts = cutcvxviolations(m, where)
-                if ncuts < 5:
-                    m._ncvxcuts -= 1
+            # if m._ncvxcuts > 0 or m._incumbent - costmip < 1e-3:
+            #    ncuts = cutcvxviolations(m, where)
+            #    if ncuts < 5:
+            #        m._ncvxcuts -= 1
 
         # plan X is feasible for MINLP: enforce the bound with: obj >= (realcost(X)-tol) * (1-|x-X|)
         else:
@@ -347,7 +346,7 @@ def computecvxviolations(m, where, eps=1e-6):
     noncvxviolations = {}
     for (ij, t), svar in m._svar.items():
         x = getval(m, svar, where)
-        if x > 0.5:
+        if x > 0.1:
             h = getval(m, m._dhvar[(ij, t)], where)
             q = getval(m, m._qvar[(ij, t)], where)
             a = m._instance.arcs[ij]
@@ -370,7 +369,7 @@ def cutcvxviolations(m, where, eps=1e-4):
     cvxviolations = {}
     for (ij, t), svar in m._svar.items():
         x = getval(m, svar, where)
-        if x > 0.5:
+        if x > 0.1:
             h = getval(m, m._dhvar[(ij, t)], where)
             q = getval(m, m._qvar[(ij, t)], where)
             a = m._instance.arcs[ij]
@@ -380,10 +379,10 @@ def cutcvxviolations(m, where, eps=1e-4):
             xvar = m._svar[ij, t] if a.control else 1
             dh0 = a.hloss.value(0)
             if gap > 0:
-                m.cbLazy(m._dhvar[ij, t] <= cut[1] * m._qvar[ij, t] + (cut[0]-dh0) * xvar + dh0)
+                m.cbCut(m._dhvar[ij, t] <= cut[1] * m._qvar[ij, t] + (cut[0]-dh0) * xvar + dh0)
                 cvxviolations[(ij, t)] = gap
             elif gap < 0:
-                m.cbLazy(m._dhvar[ij, t] >= cut[1] * m._qvar[ij, t] + (cut[0]-dh0) * xvar + dh0)
+                m.cbCut(m._dhvar[ij, t] >= cut[1] * m._qvar[ij, t] + (cut[0]-dh0) * xvar + dh0)
                 cvxviolations[(ij, t)] = -gap
     ncvx = len(cvxviolations)
     if ncvx:
@@ -399,7 +398,7 @@ def computesdviolations(m, where, eps=1e-6):
     sd = [0 for t in range(m._nperiods)]
     for (ij, t), svar in m._svar.items():
         x = getval(m, svar, where)
-        if x > 0.5:
+        if x > 0.1:
             h = getval(m, m._dhvar[(ij, t)], where)
             q = getval(m, m._qvar[(ij, t)], where)
             a = m._instance.arcs[ij]
@@ -407,4 +406,92 @@ def computesdviolations(m, where, eps=1e-6):
     sdv = {t: sd[t] for t in range(m._nperiods) if sd[t] > eps}
     print(f"sd violation: {sdv}")
 
+def cutsdviolations(m, where, eps=1e-5):
+    nsdcuts = 0
+    for (ij, t), svar in m._svar.items():
+        x = getval(m, svar, where)
+        if x > 0.1:
+            h = getval(m, m._dhvar[(ij, t)], where)
+            q = getval(m, m._qvar[(ij, t)], where)
+            g = getval(m, m._gvar[(ij, t)], where)
+            a = m._instance.arcs[ij]
+            phi = a.hloss.value(q)
+            if g < q * (phi * (1 - x) + h) - eps:
+                # print(f"hq_{ij}[{t}]: g = {g}, h*q={h*q}, gap={h*q-g} , phi(q)*q={phi * q}, q={q} ,x = {x} ")
+                m.cbCut(m._gvar[ij, t] >= phi * (m._qvar[(ij, t)] - q * m._svar[(ij, t)]) + q * m._dhvar[(ij, t)])
+                nsdcuts += 1
+    print(f"sdviolations = {nsdcuts}")
+    return nsdcuts
+
+def computesdviolations2(m, where, eps=1):
+    for (ij, t), svar in m._svar.items():
+        x = getval(m, svar, where)
+        if x > 0.1:
+            h = getval(m, m._dhvar[(ij, t)], where)
+            q = getval(m, m._qvar[(ij, t)], where)
+            g = getval(m, m._gvar[(ij, t)], where)
+            a = m._instance.arcs[ij]
+            if abs(g - h*q) > eps:
+                print(f"hq_{ij}: g = {g}, h*q={h*q}, gap={abs(g-h*q)} ")
+def computesdviolations3(m, where, eps=1):
+    sdn = [getval(m, sdvar, where) for t, sdvar in m._sdvar.items()]
+    sdg = [0 for t in range(m._nperiods)]
+    sda = [0 for t in range(m._nperiods)]
+    for (ij, t), svar in m._svar.items():
+        x = getval(m, svar, where)
+        if x > 0.1:
+            h = getval(m, m._dhvar[(ij, t)], where)
+            q = getval(m, m._qvar[(ij, t)], where)
+            g = getval(m, m._gvar[(ij, t)], where)
+            sda[t] += h*q
+            sdg[t] += g
+    sdv = {t: (sdn[t]+sda[t], sdn[t]+sdg[t]) for t in range(m._nperiods) if sdn[t] + sda[t] > eps}
+    print(f"sd violations: {sdv}")
+
+def cutsdviolations2(m, where, eps=1e-3):
+    sdn = [getval(m, sdvar, where) for t, sdvar in m._sdvar.items()]
+    sda = [0 for t in range(m._nperiods)]
+    sd = {t: {} for t in range(m._nperiods)}
+    for (ij, t), svar in m._svar.items():
+        x = getval(m, svar, where)
+        # todo 16/5 remove this condition and compute the real gap q * (phi * (1 - x) + h) - g
+        # todo or only consider when varcs are all fixed ?
+        if x > 0.1:
+            h = getval(m, m._dhvar[(ij, t)], where)
+            q = getval(m, m._qvar[(ij, t)], where)
+            g = getval(m, m._gvar[(ij, t)], where)
+            sda[t] += h*q
+            if g < h*q - 1e-5:
+                sd[t][ij] = (x, g, h, q)
+    nsdcuts = 0
+    for t in range(m._nperiods):
+        if sdn[t] + sda[t] > eps:
+            if sdn[t] + sda[t] > 100:
+                sumg=0
+                suma=0
+                for (ij, s), svar in m._svar.items():
+                    if s == t:
+                        x = getval(m, svar, where)
+                        # if x > 0.1:
+                        h = getval(m, m._dhvar[(ij, t)], where)
+                        q = getval(m, m._qvar[(ij, t)], where)
+                        g = getval(m, m._gvar[(ij, t)], where)
+                        sumg += g
+                        suma += h*q
+                        # if g < h * q - 1e-5:
+                        phi = m._instance.arcs[ij].hloss.value(q)
+                        print(ij, x, g, h, q, h*q-g, q * (phi * (1 - x) + h))
+            print(f"sd violation at t={t}: sdn={sdn[t]}, sda={sda[t]}, sa={suma}, sg={sumg}, sgt={getval(m, m._gvart[t], where)}, gap={sdn[t]+sda[t]}")
+            sys.exit(1)
+
+            for ij, (x, g, h, q) in sd[t].items():
+                phi = m._instance.arcs[ij].hloss.value(q)
+                if g < q * (phi * (1 - x) + h) - eps:
+                    print(f"hq_{ij}[{t}]: g = {g}, h*q={h*q}, gap={h*q-g} , phi(q)*q={phi * q}, q={q} ,x = {x} ")
+                    m.cbCut(m._gvar[ij, t] >= phi * (m._qvar[(ij, t)] - q * m._svar[(ij, t)]) + q * m._dhvar[(ij, t)])
+                nsdcuts += 1
+    print(f"nb sd cuts = {nsdcuts}")
+    return nsdcuts
+
 # todo getplan/setsolution:  parcourir seulement les éléments non-fixés
+# todo run BB for some iterations and generate cuts (cvx, sd) / then relaunch with the chosen cuts

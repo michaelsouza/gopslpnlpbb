@@ -128,7 +128,7 @@ def tanks(instance, qnlp, volnlp):
         axs[n].set_yticks([round(mini), 0, round(maxi)])
 
         ax2.append(axs[n].twinx())
-        hwaternlp = [vol[j] / tk.surface for vol in volnlp]
+        hwaternlp = [vol[j] / tk.surface for vol in volnlp.values()]
         ax2[n].plot(instance.periods, hwaternlp, 'DarkOrange', linestyle='-', linewidth=3,
                     label='real water height in $m$')
 

@@ -22,7 +22,7 @@ class PotentialNetwork:
     """a weakly connected potential network with controllable arcs and two types of nodes: demand or reservoir."""
 
     CONVERGENCE_TOLERANCE = 1e-8
-
+    # todo handle the case of a demand-inactivearc-tank component (todo later: merge the node with the tank)
     def __init__(self, nd0nodes: int, nvarcs: int, hloss: list, history: bool, a: list, d: list, h: list):
         """Create Potential network."""
         self.nd0nodes = nd0nodes
@@ -50,6 +50,7 @@ class PotentialNetwork:
 
         self.history = {} if history else None
         self.hasvarcs = nvarcs > 0
+        print(f"Network component (h,d0,d,v,a) = ({len(h)}, {nd0nodes}, {len(d)-nd0nodes}, {nvarcs} , {len(a)}) hnodes= {h}")
 
     def erasehistory(self):
         self.history = None

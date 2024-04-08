@@ -25,7 +25,7 @@ import os
 
 OA_GAP = 1e-2
 MIP_GAP = 1e-6
-TIME_LIMIT = 3600
+TIME_LIMIT = 1200
 
 BENCH = {
     'FSD': {'ntk': 'Simple_Network', 'D0': 1, 'H0': '/01/2013 00:00'},
@@ -94,10 +94,10 @@ def solve(instance, oagap, mipgap, drawsolution, stat, varvals=None):
     print("create model")
     cvxmodel = rel.build_model(instance, oagap)
     if varvals:
-        print(f"!!! fixed variables !!! {varvals}")
+        print(f"!!! fix variables !!! {varvals}")
         rel.postvalues(cvxmodel, varvals)
 
-    cvxmodel.write('convrel.lp')
+    # cvxmodel.write('convrel.lp')
     cvxmodel.params.MIPGap = mipgap
     cvxmodel.params.timeLimit = TIME_LIMIT
     # cvxmodel.params.OutputFlag = 0
@@ -222,7 +222,7 @@ def testsolutions(instid, solfilename, oagap=OA_GAP, mipgap=MIP_GAP, modes='CVX'
         cvxmodel.terminate()
 
 
-# solveinstance('FSD s 48 1', modes='C1', drawsolution=False)
+# solveinstance('FSD s 48 1', modes='C1', drawsolution=True)
 solveinstance('RIC s 12 4', modes='C1', drawsolution=False)
 # testsolution('RIC s 12 4', Path(OUTDIR, "solric124.csv"), modes="C1", drawsolution=False)
 # testfullsolutions('FSD s 48 4', "solerror.csv", modes="CVX")

@@ -167,6 +167,7 @@ class _Reservoir(_Node):
         self.profileid = profileid
         self.hprofile = None
         self.heads = None
+        self._qoutmax = []
 
     def setprofile(self, profile):
         self.hprofile = profile[self.profileid]
@@ -175,6 +176,11 @@ class _Reservoir(_Node):
     def head(self, t):
         return self.heads[t]
 
+    def setqoutmax(self, qoutmax: list):
+        self._qoutmax = qoutmax
+
+    def qoutmax(self, t: int) -> float:
+        return self._qoutmax[t] if self._qoutmax else 1e8
 
 class _Arc:
     """Generic network arc.
@@ -204,6 +210,9 @@ class _Arc:
     def qmax(self, t: int = -1) -> float:
         """ return the maximum flow value, at time t if specified. """
         return self._qmax if t < 0 or not self._qbounds else self._qbounds[t][1]
+
+    def constant(self, t: int) -> bool:
+        return myequalto(self.qmin(t), self.qmax(t))
 
     def setqbounds(self, qbounds: list, qminmax: Tuple[float, float]):
         """ import specific time indexed active bounds when arc is active;
@@ -592,7 +601,7 @@ class Instance:
 
         if self.name == 'Richmond':
             # dep['p1 => p0'].add((('196', '768'), ('209', '766'))) already in symmetry
-            dep['p1 => p0'].add((('196', '768'), ('175', '186')))
+            # dep['p1 => p0'].add((('196', '768'), ('175', '186'))) already in p0 = p1 xor p2
             dep['p1 => p0'].add((('312', 'TD'), ('264', '112')))
             dep['p1 => p0'].add((('264', '112'), ('312', 'TD')))
 
@@ -699,6 +708,12 @@ class Instance:
                        for t in self.horizon()]
 
             tk.setqinbounds(qinbnds)
+
+        for j, res in self.reservoirs.items():
+            qoutmax = [sum(self.arcs[a].qmax(t) for a in self.outarcs(j)) - sum(self.arcs[a].qmin(t) for a in self.inarcs(j))
+                       for t in self.horizon()]
+            res.setqoutmax(qoutmax)
+
 
     # @todo directly generate this json file
     def format_bounds_obbt(self, obbtlevel: str = "C1"):
