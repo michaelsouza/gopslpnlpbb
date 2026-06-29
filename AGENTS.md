@@ -16,6 +16,8 @@ This repo uses a single-context domain-doc layout: root `CONTEXT.md` plus ADRs i
 
 The active collaboration branch is `bonvin-atm-audit`, tracking `origin/bonvin-atm-audit` on the fork `michaelsouza/gopslpnlpbb`. The original public repository is kept as `upstream` at `https://github.com/sofdem/gopslpnlpbb.git`.
 
-The active PRD is GitHub issue `michaelsouza/gopslpnlpbb#1`: "PRD: Auditable Bonvin AT(M) GOPS reproduction for EPANET-BB clamp audit".
+The active Bonvin public-artifact PRD is GitHub issue `michaelsouza/gopslpnlpbb#1`: "PRD: Auditable Bonvin AT(M) GOPS reproduction for EPANET-BB clamp audit".
+
+A related new-experiment PRD is GitHub issue `michaelsouza/gopslpnlpbb#10`: "PRD: EPANET-BB-equivalent GOPS experiments". Keep this separate from the Bonvin public-artifact sufficiency workstream.
 
 This workstream should produce an auditable reproduction outcome: either complete GOPS/Bonvin schedules normalized and audited with EPANET-BB, or a documented insufficiency note showing that public GOPS artifacts are not enough. Do not invent schedules from aggregate runtime, cost, or gap values. Use Gurobi/`gurobipy` as the solver-faithful path; any non-Gurobi solver attempt is only a separately documented diagnostic fallback.

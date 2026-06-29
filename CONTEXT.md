@@ -29,8 +29,20 @@ The operation actually simulated after hydraulic solver behavior such as tank-bo
 _Avoid_: Commanded pump schedule.
 
 **Activation limit**:
-The maximum number of pump activations allowed in a scheduling case. In the Bonvin-Costa AT(M) comparison this is reported as `N`, with cases for `N = 1`, `N = 2`, and `N = 3`.
+The maximum number of pump operation changes allowed in a scheduling case. This term is ambiguous unless the artifact states whether it limits starts only or both start and stop transitions.
 _Avoid_: Treating horizon length as an activation limit.
+
+**Start limit**:
+A limit on commanded pump starts, i.e. `0 -> 1` transitions. In Bonvin's formulation this is represented by `N` through start variables, and public GOPS currently models this with ignition variables.
+_Avoid_: Bidirectional actuation limit.
+
+**Bidirectional actuation limit**:
+A limit that separately constrains commanded pump starts and stops, i.e. `0 -> 1` and `1 -> 0` transitions. EPANET-BB's `max_actuations` uses this semantics.
+_Avoid_: Start limit.
+
+**EPANET-BB-equivalent GOPS experiment**:
+A new experiment that adapts the GOPS method to run on the benchmark assumptions used by the EPANET-BB paper, including network, profile, horizon, pump reconstruction, and the operative actuation semantics of the published EPANET-BB artifacts. It is not a direct Bonvin public-artifact reproduction.
+_Avoid_: Bonvin reproduction when GOPS semantics or data have been changed.
 
 **Public artifact sufficiency**:
 The standard for deciding whether the public GOPS repository contains enough information to support a clamp-audit comparison. If complete schedules or reproducible schedule generation are absent, the result is a documented insufficiency rather than a fabricated comparison.

@@ -30,6 +30,12 @@ Record each investigation step here, with enough detail for another agent to rer
 | 2026-06-28 | #3 | `data/Anytown/*.csv` | GOPS `Anytown` has 19 junctions, 41 pipes, 3 fixed-speed pumps, 0 valves, 3 source rows, and 2 tank rows. |
 | 2026-06-28 | #3 | `/home/michael/gitrepos/epanet-bb/networks/any-town.inp` | EPANET-BB AnyTown has 19 junctions, 41 pipes, 3 pumps, 0 valves, 1 reservoir, and 3 tanks. |
 | 2026-06-28 | #3 | `/home/michael/gitrepos/epanet-bb/references/bonvin2021pump.md` | Bonvin Table 2 describes AT(M) as 41 pipes, 0 valves, 3 pumps, 3 tanks, 1 source, and 19 junctions; footnote 3 says Bonvin connects tanks 165 and 265 with a zero-length pipe relative to Costa et al. |
+| 2026-06-29 | #5 | `/home/michael/gurobi13.0.2_linux64.tar.gz` | Gurobi 13.0.2 was extracted to `/home/michael/gurobi1302`; `gurobi_cl` and `grbgetkey` are available. |
+| 2026-06-29 | #5 | `.venv/bin/python -m pip install ...` | Local `.venv` was populated with `gurobipy 13.0.2`, `numpy`, `pandas`, `matplotlib`, and `tables`. |
+| 2026-06-29 | #5 | SSH SOCKS via `labma-sol` | `grbgetkey` was run locally using a SOCKS proxy through `michael@146.164.27.3:5121`; the proxy egress IP was `146.164.27.3`. |
+| 2026-06-29 | #5 | `/home/michael/gurobi.lic` | Academic Gurobi license was retrieved locally and saved outside the repo; it expires on 2027-06-29. Do not commit or print the license file. |
+| 2026-06-29 | #5 | `gurobi_cl` outside sandbox | `coins.lp` solved successfully with the academic license. |
+| 2026-06-29 | #5 | `gurobipy` outside sandbox | GOPS AnyTown relaxation model built and optimization started with 1778 variables and 206160 constraints; a 1-second limit ended with status 9, confirming the unrestricted academic license path works for a large GOPS model. |
 
 ## Evidence Categories
 
@@ -50,6 +56,13 @@ Later issues should fill these sections instead of scattering conclusions across
 - Record Python version, package versions, `gurobipy` version, and Gurobi license status when tested.
 - Treat missing or restricted Gurobi licensing as a partial blocker, not as evidence that public schedules do or do not exist.
 - Gurobi/`gurobipy` is the solver-faithful path. Any non-Gurobi attempt must be documented as a diagnostic fallback, not a Bonvin/GOPS reproduction.
+- Local solver setup as of 2026-06-29:
+  - Gurobi install root: `/home/michael/gurobi1302/linux64`.
+  - License file: `/home/michael/gurobi.lic`, outside the repository.
+  - Python environment: repo-local `.venv` with `gurobipy 13.0.2`.
+  - Required runtime environment: set `GUROBI_HOME`, add `$GUROBI_HOME/bin` to `PATH`, add `$GUROBI_HOME/lib` to `LD_LIBRARY_PATH`, and set `GRB_LICENSE_FILE=/home/michael/gurobi.lic`.
+  - Gurobi commands must run outside the Codex sandbox when license validation needs the machine hostid; inside the sandbox `grbprobe` cannot read the hostid and reports a mismatch.
+  - `gurobipy` initially exposed a size-limited restricted license, but the GOPS AnyTown model is too large for that restricted license. The academic license resolves this size limit outside the sandbox.
 
 ### Benchmark Identity Findings
 
@@ -126,6 +139,15 @@ Practical implication for later issues: GOPS `ANY` is suitable for investigating
 
 - Record how GOPS instance keys map to benchmark, profile, horizon, and day.
 - Record whether the Bonvin-Costa activation limit `N = 1, 2, 3` is represented in public GOPS code or data.
+- Bonvin's general formulation uses start variables for pump starts (`0 -> 1`) and applies `N` to starts. The public GOPS code follows this direction with ignition variables and a hardcoded start limit.
+- EPANET-BB `max_actuations` is a different semantics: it tracks starts (`0 -> 1`) and stops (`1 -> 0`) separately by pump.
+- Therefore, running GOPS on the same `NA_max = 1, 2, 3` cases as EPANET-BB is a new EPANET-BB-equivalent GOPS experiment, not a direct Bonvin public-artifact reproduction.
+- The EPANET-BB-equivalent GOPS experiment is tracked by GitHub issue `michaelsouza/gopslpnlpbb#10`.
+- The new experiment should keep Bonvin/GOPS public-artifact sufficiency and EPANET-BB-equivalent GOPS comparison results separate in outputs and prose.
+- `../epanet-bb/paper/paper.tex` defines the comparison target as AnyTown Modified, `T = 24`, three parallel fixed-speed pumps, tanks 65/165/265, and `NA_max = 1, 2, 3`.
+- The paper also includes EPANET-BB-specific parameter tuning, ablation, and MPI scalability experiments. These are contextual for GOPS unless a later issue designs explicit GOPS analogues.
+- The minimum GOPS comparison surface for the paper is: run the GOPS method on the same 24-hour AnyTown Modified benchmark assumptions for `NA_max = 1, 2, 3`; export schedule JSONs compatible with EPANET-BB's audit/figure scripts; compare cost, runtime, feasibility/audit events, and pump schedules against `paper/data/run_*_a_*.json`.
+- Note a source-of-truth conflict: `paper.tex` states `sum |x_h - x_{h-1}| <= NA_max`, but the published JSON schedules and EPANET-BB code use a looser operative semantics with separate start/stop budgets and initialization details. The GOPS experiment should target the operative artifacts/code semantics, while documenting the paper-text mismatch.
 
 ### Schedule Availability
 

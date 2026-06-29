@@ -1,0 +1,3 @@
+# Run an EPANET-BB-equivalent GOPS experiment
+
+We will treat running GOPS on the benchmark cases reported in `../epanet-bb/paper/paper.tex` as a new experiment, tracked by GitHub issue `michaelsouza/gopslpnlpbb#10`, not as a direct reproduction of Bonvin et al. public artifacts. The minimum comparable surface is the 24-hour AnyTown Modified optimization and schedule comparison for `NA_max = 1, 2, 3`; EPANET-BB-specific ablation and MPI scalability studies are contextual unless we deliberately design GOPS analogues. This keeps the Bonvin/GOPS public-artifact sufficiency conclusion separate from any GOPS-method comparison on EPANET-BB paper instances.
