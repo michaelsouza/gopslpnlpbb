@@ -36,6 +36,11 @@ Record each investigation step here, with enough detail for another agent to rer
 | 2026-06-29 | #5 | `/home/michael/gurobi.lic` | Academic Gurobi license was retrieved locally and saved outside the repo; it expires on 2027-06-29. Do not commit or print the license file. |
 | 2026-06-29 | #5 | `gurobi_cl` outside sandbox | `coins.lp` solved successfully with the academic license. |
 | 2026-06-29 | #5 | `gurobipy` outside sandbox | GOPS AnyTown relaxation model built and optimization started with 1778 variables and 206160 constraints; a 1-second limit ended with status 9, confirming the unrestricted academic license path works for a large GOPS model. |
+| 2026-06-29 | #4 | `src/gops.py` | Instance ids have exactly four tokens: benchmark, profile, horizon, and day. There is no activation-limit token. `solvebench` writes only statistics CSVs, and the file has an unguarded `solvebench(FASTBENCH[:7], mode='')` call at import/execution time. |
+| 2026-06-29 | #4 | `src/instance.py` | `Instance` builds network data, profiles, dependencies, and symmetries. `ANY s 24 1` uses skipped 30-minute smooth-profile rows to create 24 one-hour periods. `parsesolution` expects a CSV status table and returns inactive arcs by period. |
+| 2026-06-29 | #4 | `src/convexrelaxation.py` | Pump activity variables are `svar`/`xk`; pump ignition variables are `ivar`/`ik`. The only public switching cap is hardcoded at 6 starts per unique pump abstraction, or `6 * len(sympumps)` for a symmetric group. |
+| 2026-06-29 | #4 | `src/lpnlpbb.py`, `src/primalheuristic.py`, `src/stats.py` | Incumbent schedules are held in memory as `activity`/`inactive` dictionaries. Time-adjusted heuristic solutions are separately flagged, but the adjusted subperiod-duration schedule is not exported as a normal fixed-period pump schedule. |
+| 2026-06-29 | #4 | `rg -n -i "activation\|actuation\|ignition\|switch\|switching\|start\|stop\|dependency\|dependencies\|symmetry\|symmetries\|symmetric\|NA_max\|max_actuations\|max_act\|N =" src data docs output` | Relevant GOPS code hits are `convexrelaxation.py` for switching/ignition, `instance.py` for dependencies/symmetries, `lpnlpbb.py`/`primalheuristic.py` for fixed-period and adjusted incumbents. No public GOPS code/data hit exposes configurable `N = 1, 2, 3` or EPANET-BB-style `NA_max`. |
 
 ## Evidence Categories
 
@@ -137,17 +142,93 @@ Practical implication for later issues: GOPS `ANY` is suitable for investigating
 
 ### Scheduling Semantics And Activation Limit
 
-- Record how GOPS instance keys map to benchmark, profile, horizon, and day.
-- Record whether the Bonvin-Costa activation limit `N = 1, 2, 3` is represented in public GOPS code or data.
-- Bonvin's general formulation uses start variables for pump starts (`0 -> 1`) and applies `N` to starts. The public GOPS code follows this direction with ignition variables and a hardcoded start limit.
-- EPANET-BB `max_actuations` is a different semantics: it tracks starts (`0 -> 1`) and stops (`1 -> 0`) separately by pump.
-- Therefore, running GOPS on the same `NA_max = 1, 2, 3` cases as EPANET-BB is a new EPANET-BB-equivalent GOPS experiment, not a direct Bonvin public-artifact reproduction.
-- The EPANET-BB-equivalent GOPS experiment is tracked by GitHub issue `michaelsouza/gopslpnlpbb#10`.
-- The new experiment should keep Bonvin/GOPS public-artifact sufficiency and EPANET-BB-equivalent GOPS comparison results separate in outputs and prose.
-- `../epanet-bb/paper/paper.tex` defines the comparison target as AnyTown Modified, `T = 24`, three parallel fixed-speed pumps, tanks 65/165/265, and `NA_max = 1, 2, 3`.
-- The paper also includes EPANET-BB-specific parameter tuning, ablation, and MPI scalability experiments. These are contextual for GOPS unless a later issue designs explicit GOPS analogues.
-- The minimum GOPS comparison surface for the paper is: run the GOPS method on the same 24-hour AnyTown Modified benchmark assumptions for `NA_max = 1, 2, 3`; export schedule JSONs compatible with EPANET-BB's audit/figure scripts; compare cost, runtime, feasibility/audit events, and pump schedules against `paper/data/run_*_a_*.json`.
-- Note a source-of-truth conflict: `paper.tex` states `sum |x_h - x_{h-1}| <= NA_max`, but the published JSON schedules and EPANET-BB code use a looser operative semantics with separate start/stop budgets and initialization details. The GOPS experiment should target the operative artifacts/code semantics, while documenting the paper-text mismatch.
+Issue #4 conclusion: **the public GOPS code does not expose Bonvin-Costa `N = 1, 2, 3` as a configurable parameter and does not implement EPANET-BB `NA_max` semantics.** It uses pump-on binary variables plus ignition/start binary variables, with a hardcoded start cap of `6`. For `Anytown`, all three pumps are treated as one symmetric group, so the public model applies an aggregate cap of `6 * 3 = 18` ignition variables across the group rather than a strict per-pump `N`.
+
+#### Instance Key Syntax
+
+`makeinstance(instid)` in `src/gops.py` requires exactly four whitespace-separated tokens:
+
+| Token | Meaning | `ANY s 24 1` value |
+| ----- | ------- | ------------------ |
+| 1 | benchmark key in `BENCH` | `ANY`, selecting network `Anytown`, base day `D0 = 1`, and base time `/01/2013 00:00` |
+| 2 | profile key in `PROFILE` | `s`, selecting `Profile_5d_30m_smooth` |
+| 3 | horizon/discretization key in `STEPLENGTH` | `24`, selecting `aggregatesteps = 2` |
+| 4 | day offset | `1`, selecting day 1 from `01/01/2013 00:00` to `02/01/2013 00:00` |
+
+There is no token for an activation limit, start limit, actuation budget, solver mode, or output schedule path. `FASTBENCH` also contains only FSD/Richmond entries; `ANY s 24 1` must be requested explicitly. Caveat: `src/gops.py` ends with an unguarded `solvebench(FASTBENCH[:7], mode='')`, so importing `gops` as a module can unexpectedly run benchmark solves unless guarded or bypassed.
+
+#### `ANY s 24 1` Construction Trace
+
+- `BENCH['ANY']` selects `Anytown`, `D0 = 1`, and `H0 = '/01/2013 00:00'`.
+- `PROFILE['s']` selects `Profile_5d_30m_smooth`; `PROFILE['n']` currently selects the same file.
+- `STEPLENGTH['24'] = 2`, meaning the parser advances by two profile rows at a time.
+- `makeinstance('ANY s 24 1')` constructs `Instance('Anytown', 'Profile_5d_30m_smooth', '01/01/2013 00:00', '02/01/2013 00:00', 2)`.
+- `Instance.__init__` parses tanks, junctions, sources, pumps, pipes, valves, profiles, dependencies, and symmetries from `data/Anytown`.
+- `Instance._parse_profiles` skips rows by `aggregatesteps`; it does not use `_parse_profiles_aggregate`. For the smooth 30-minute profile, `ANY s 24 1` selects every second row and yields 24 one-hour periods.
+- `Instance._dependencies()` returns `None` for Anytown.
+- `Instance._pump_symmetric()` returns the three Anytown pump arcs `('R1', 'J20')`, `('R2', 'J20')`, and `('R3', 'J20')`.
+
+Direct `solveinstance('ANY s 24 1')` still has an operational caveat: `solve()` calls `instance.parse_bounds()`, and this repository does not contain `bounds/Anytown.hdf`. The current exception handler only catches `UnicodeDecodeError`, so a normal direct solve path can fail on missing bounds before model construction. The #5 solver smoke test bypassed that path by constructing the relaxation model directly.
+
+#### Commanded Schedule Representation
+
+The model uses:
+
+- `svar[(i, j), t]`, named `xk(i,j,t)` for pumps, as the commanded pump-on status for arc `(i, j)` at period `t`.
+- `ivar[(i, j), t]`, named `ik(i,j,t)`, as an ignition/start indicator used by switching constraints.
+- `activity[t][a]` in `lpnlpbb.py` as the in-memory commanded schedule, where `activity[t][a] = 1` means arc `a` is commanded active in period `t`.
+- `inactive[t]` as the complement set consumed by `HydraulicNetwork.extended_period_analysis(inactive)`.
+
+For Anytown, there are no valves, so schedule normalization can focus on the three pump arcs. A later extraction issue should map GOPS pump arcs in deterministic order to EPANET-BB pump IDs with caveats:
+
+| GOPS arc | GOPS pump row | Likely EPANET-BB pump |
+| -------- | ------------- | --------------------- |
+| `('R1', 'J20')` | `1A` | `111` |
+| `('R2', 'J20')` | `2A` | `222` |
+| `('R3', 'J20')` | `3A` | `333` |
+
+This mapping is schedule-compatible for the parallel-pump abstraction, but it is not a proof that the GOPS and EPANET-BB hydraulic instances are identical. The source/tank/profile caveats from issue #3 still apply.
+
+`solvebench()` currently writes only aggregate statistics to `../output/resYYMMDD-MODE.csv`. The public branch does not write complete incumbent pump schedules. `testsolution()` can read a CSV schedule and use `pumpvals` to fix `svar`, but that is a validation path for an externally supplied schedule, not evidence that Bonvin/GOPS public outputs contain one.
+
+#### Activation, Starts, Stops, And Symmetry
+
+The public switching logic is in `convexrelaxation.build_model`:
+
+- `ivar[a, t] >= svar[a, t] - svar[a, t - 1]` for `t = 1..T-1`.
+- `sum_t ivar[a, t] <= 6 - svar[a, 0]` for a non-symmetric pump abstraction.
+- If a benchmark has a symmetric group, `pumps_without_sym()` replaces all pumps in the group by fictional key `'sym'`, and `getv(ivar, 'sym', t)` sums `ivar` over all pumps in the group.
+- For a symmetric group, the cap becomes `sum_t sum_p ivar[p, t] <= 6 * len(sympumps)`.
+- An ordering constraint also enforces `ivar[p_i, t] >= ivar[p_{i+1}, t]` and `svar[p_i, t] >= svar[p_{i+1}, t]` inside the symmetric group.
+
+Implications:
+
+- The code counts pump starts (`0 -> 1`) through ignition variables. It does not count stops (`1 -> 0`) and has no separate stop variable.
+- The code has no `N`, `NA`, `NA_max`, `max_actuations`, or command-line option that selects `N = 1, 2, 3`.
+- For `ANY s 24 1`, because all three pumps are symmetric, the only public cap is an aggregate symmetric-group start cap of 18 starts across the day.
+- The `6 - svar[a, 0]` non-symmetric expression suggests the author intended starts from an initially-off state to be bounded by 6, with special handling if the pump is already on at period 0. The code comment says `make ivar[a,0] = svar[a,0]`, but no such constraint is implemented.
+- `ivar` has lower-bound transition constraints but no upper-bound equivalence constraints and no objective coefficient. It is sufficient for restricting starts through the cap, but raw `ivar` values are not a reliable schedule artifact. Use `svar`/`activity` to reconstruct commanded pump status.
+- The minimum one-hour activity constraint is only added when the instance timestep is 30 minutes. `ANY s 24 1` has one-hour periods, so that constraint is not active for the target case.
+- Dependency constraints are benchmark-specific and apply only when `inst.dependencies` is not `None`; Anytown has none.
+
+#### Exact/Incumbent Versus Adjusted Heuristic Solutions
+
+`lpnlpbb.py` distinguishes two solution types:
+
+- Hydraulically feasible incumbent: an integer `svar` plan passes `extended_period_analysis(inactive)`, is costed with simulated flows, and is appended to `_solutions` with `adjusted = False`, plus `flows` and `volumes`.
+- Time-adjusted heuristic incumbent: an integer `svar` plan first violates the fixed-period hydraulic audit, then `primalheuristic.adjust_steplength()` tries to shift neighboring configurations by variable subperiod durations. If accepted in `CUT` mode, it is appended with `adjusted = True`, `flows = None`, and `volumes = None`; adjusted candidates are also tracked in `_adjust_solutions`.
+
+The adjusted heuristic is not a fixed 24-period commanded pump schedule suitable for EPANET-BB JSON export by itself. The stored `plan` remains the original period-indexed `activity` dictionary; the heuristic's subperiod-duration decisions are local to `primalheuristic.py` and are not exported as a complete schedule artifact. For the Bonvin public-artifact audit, only non-adjusted incumbent schedules should be treated as directly auditable fixed-period schedules unless a later issue implements and documents a separate adjusted-schedule export format.
+
+#### Relationship To EPANET-BB `NA_max`
+
+Bonvin's general formulation uses start variables for pump starts (`0 -> 1`) and applies `N` to starts. EPANET-BB `max_actuations` is different in the operative artifacts: it tracks starts (`0 -> 1`) and stops (`1 -> 0`) separately by pump, with initialization details that do not reduce to the public GOPS hardcoded start cap.
+
+Therefore, running GOPS on the same `NA_max = 1, 2, 3` cases as EPANET-BB is a new EPANET-BB-equivalent GOPS experiment, not a direct Bonvin public-artifact reproduction. That experiment is tracked separately by GitHub issue `michaelsouza/gopslpnlpbb#10`.
+
+The new experiment should keep Bonvin/GOPS public-artifact sufficiency and EPANET-BB-equivalent GOPS comparison results separate in outputs and prose. `../epanet-bb/paper/paper.tex` defines the comparison target as AnyTown Modified, `T = 24`, three parallel fixed-speed pumps, tanks 65/165/265, and `NA_max = 1, 2, 3`. It also includes EPANET-BB-specific parameter tuning, ablation, and MPI scalability experiments; those are contextual for GOPS unless a later issue designs explicit GOPS analogues.
+
+The minimum GOPS comparison surface for the paper is: run the GOPS method on the same 24-hour AnyTown Modified benchmark assumptions for `NA_max = 1, 2, 3`; export schedule JSONs compatible with EPANET-BB's audit/figure scripts; compare cost, runtime, feasibility/audit events, and pump schedules against `paper/data/run_*_a_*.json`. Note a source-of-truth conflict: `paper.tex` states `sum |x_h - x_{h-1}| <= NA_max`, but the published JSON schedules and EPANET-BB code use a looser operative semantics with separate start/stop budgets and initialization details. The GOPS experiment should target the operative artifacts/code semantics, while documenting the paper-text mismatch.
 
 ### Schedule Availability
 
