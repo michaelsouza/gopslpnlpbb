@@ -1,0 +1,122 @@
+{
+  "bounds": {
+    "path": "bounds/Anytown.hdf",
+    "public_solve_path_caveat": "src/gops.py solve() calls instance.parse_bounds() unconditionally and only catches UnicodeDecodeError, so the direct public path would fail before model construction for ANY s 24 1.",
+    "status": "missing_skipped"
+  },
+  "candidate": {
+    "activation_limit_caveat": "The public GOPS model has no configurable Bonvin/EPANET-BB N or NA_max token. For Anytown it applies the hardcoded symmetric-group start cap from convexrelaxation.py.",
+    "aggregate_steps": 2,
+    "benchmark_caveat": "GOPS Anytown is an AnyTown-family public benchmark, but its tank, source, and profile representation is not a literal EPANET-BB any-town.inp match.",
+    "end_time": "02/01/2013 00:00",
+    "network": "Anytown",
+    "period_duration_hours": 1.0,
+    "periods": 24,
+    "profile": "Profile_5d_30m_smooth",
+    "public_instance_id": "ANY s 24 1",
+    "pump_arcs": [
+      [
+        "R1",
+        "J20"
+      ],
+      [
+        "R2",
+        "J20"
+      ],
+      [
+        "R3",
+        "J20"
+      ]
+    ],
+    "start_time": "01/01/2013 00:00"
+  },
+  "command": [
+    "run_candidate_anytown.py",
+    "--time-limit",
+    "60",
+    "--output",
+    "output/bonvin_atm_anytown_candidate_run.json"
+  ],
+  "environment": {
+    "GRB_LICENSE_FILE_set": true,
+    "GUROBI_HOME_set": true,
+    "LD_LIBRARY_PATH_set": true
+  },
+  "instance": {
+    "basic": "Anytown 2013-01-01 00:00:00 range(0, 24)",
+    "network": "3 pumps, 0 valves, 2 tanks",
+    "nperiods": 24,
+    "period_duration_hours": 1.0,
+    "pumps": [
+      {
+        "arc": [
+          "R1",
+          "J20"
+        ],
+        "id": "1A"
+      },
+      {
+        "arc": [
+          "R2",
+          "J20"
+        ],
+        "id": "2A"
+      },
+      {
+        "arc": [
+          "R3",
+          "J20"
+        ],
+        "id": "3A"
+      }
+    ]
+  },
+  "issue": "michaelsouza/gopslpnlpbb#7",
+  "model": {
+    "binary_variables": 144,
+    "constraints": 206160,
+    "integer_variables": 144,
+    "variables": 1778
+  },
+  "runner": {
+    "avoids_gops_import_side_effect": true,
+    "expected_working_directory_for_legacy_modules": "/home/michael/gitrepos/gopslpnlpbb/src",
+    "path": "tools/run_candidate_anytown.py"
+  },
+  "runtime": {
+    "epsilon": 0.01,
+    "mip_gap": 1e-06,
+    "mode": "plain",
+    "original_cwd": "/home/michael/gitrepos/gopslpnlpbb",
+    "solver_cwd": "/home/michael/gitrepos/gopslpnlpbb/src",
+    "time_limit_seconds": 60.0
+  },
+  "runtime_status": {
+    "completed": true,
+    "gurobi_runtime_seconds": 60.16815900802612,
+    "gurobi_status": 9,
+    "gurobi_status_name": "TIME_LIMIT",
+    "mip_gap": "inf",
+    "node_count": 1325.0,
+    "objective_bound": 687.2836868303827,
+    "objective_value": "inf",
+    "reported_real_cost": 0,
+    "solution_count": 0,
+    "wall_time_seconds": 61.523
+  },
+  "solution_classification": {
+    "adjusted_solution_count": 0,
+    "best_unadjusted_schedule": null,
+    "schedule_availability": "no_complete_unadjusted_commanded_pump_schedule",
+    "solution_count": 0,
+    "solutions": [],
+    "unadjusted_solution_count": 0
+  },
+  "solver": {
+    "gurobipy_version": [
+      13,
+      0,
+      2
+    ]
+  }
+}

@@ -45,6 +45,8 @@ Record each investigation step here, with enough detail for another agent to rer
 | 2026-06-29 | #6 | `output/sol.csv`, `data/Richmond/Pump.csv`, `data/Richmond/Valve_Set.csv`, `src/gops.py`, `src/instance.py` | `output/sol.csv` is a complete 12-period Richmond active-element status table accepted by `Instance.parsesolution`, not an Anytown/AT(M) 24-period schedule. |
 | 2026-06-29 | #6 | `bounds/*.hdf`, inspected with pandas/PyTables | Bounds files expose a single `/w` table whose secondary index labels are `flow` and `head`; they are OBBT bound artifacts, not pump-status schedules. |
 | 2026-06-29 | #6 | `rg -n -i "sol\.csv\|solution\|solutions\|output\|pumpvals\|parsesolution\|testsolution\|activity\|inactive\|xk\(\|svar" README.md src output data docs` | Public code has an input-validation path for externally supplied schedules and in-memory incumbent schedules, but no tracked Bonvin/GOPS output writes complete `svar`/`activity` schedules. |
+| 2026-06-29 | #7 | `./.venv/bin/python tools/run_candidate_anytown.py --describe-only` | The runner records the candidate as public instance `ANY s 24 1`: `Anytown`, `Profile_5d_30m_smooth`, `01/01/2013 00:00` to `02/01/2013 00:00`, 24 one-hour periods, pump arcs `R1/R2/R3 -> J20`, with the known benchmark and activation-limit caveats. |
+| 2026-06-29 | #7 | `env GUROBI_HOME=/home/michael/gurobi1302/linux64 PATH=/home/michael/gurobi1302/linux64/bin:$PATH LD_LIBRARY_PATH=/home/michael/gurobi1302/linux64/lib:${LD_LIBRARY_PATH:-} GRB_LICENSE_FILE=/home/michael/gurobi.lic ./.venv/bin/python tools/run_candidate_anytown.py --time-limit 60 --output output/bonvin_atm_anytown_candidate_run.json` | Gurobi academic license was recognized and the controlled GOPS Anytown model ran for a 60-second limit. It ended with Gurobi status `TIME_LIMIT`, 1325 nodes, no accepted solution, and no complete unadjusted commanded pump schedule. Durable summary: `output/bonvin_atm_anytown_candidate_run.json`. |
 
 ## Evidence Categories
 
@@ -291,6 +293,74 @@ No inspected public artifact provides all of the following at once:
 - Provenance connecting the status table to Bonvin AT(M) or the GOPS LP/NLP branch-and-bound comparison.
 
 Therefore, existing public outputs alone cannot produce an EPANET-BB schedule JSON for the Bonvin AT(M) clamp audit. Producing such a JSON from the current public artifacts would require inventing the missing Anytown pump decisions. The next valid paths are either to run GOPS and export a new solver-derived schedule, or to document final public-artifact insufficiency if a solver-derived schedule cannot be produced.
+
+### Candidate GOPS Run
+
+Issue #7 conclusion: **a solver-faithful GOPS Anytown execution was attempted, but it did not produce a complete commanded pump schedule.**
+
+The selected candidate run is public instance `ANY s 24 1`, expanded without importing `src/gops.py`:
+
+- Network: `Anytown`
+- Profile: `Profile_5d_30m_smooth`
+- Horizon: `01/01/2013 00:00` to `02/01/2013 00:00`
+- Discretization: 24 one-hour periods (`aggregate_steps = 2`)
+- Pump arcs: `('R1', 'J20')`, `('R2', 'J20')`, and `('R3', 'J20')`
+- Activation-limit caveat: no public `N` or `NA_max` token exists; the public model uses the hardcoded symmetric-group start cap from `src/convexrelaxation.py`
+- Benchmark caveat: GOPS `Anytown` remains AnyTown-family but not a literal EPANET-BB `any-town.inp` match because of the tank/source/profile differences recorded in issue #3
+
+The runner is `tools/run_candidate_anytown.py`. It avoids the unguarded `solvebench(FASTBENCH[:7], mode='')` side effect in `src/gops.py`, changes the solver working directory to `src` for the legacy `../data` and `../bounds` paths, and records a JSON summary in `output/bonvin_atm_anytown_candidate_run.json`.
+
+The direct public `solveinstance('ANY s 24 1')` path remains operationally blocked before model construction because `solve()` calls `instance.parse_bounds()` and the repository has no `bounds/Anytown.hdf`. The exception handler only catches `UnicodeDecodeError`, not a missing file. The controlled run therefore recorded the missing bounds file and skipped bounds parsing so that the solver-faithful model could still be exercised with the public CSV data.
+
+#### Run Command And Environment
+
+Command from repository root:
+
+```sh
+env GUROBI_HOME=/home/michael/gurobi1302/linux64 PATH=/home/michael/gurobi1302/linux64/bin:$PATH LD_LIBRARY_PATH=/home/michael/gurobi1302/linux64/lib:${LD_LIBRARY_PATH:-} GRB_LICENSE_FILE=/home/michael/gurobi.lic ./.venv/bin/python tools/run_candidate_anytown.py --time-limit 60 --output output/bonvin_atm_anytown_candidate_run.json
+```
+
+Runtime assumptions and observed solver state:
+
+- Original working directory: `/home/michael/gitrepos/gopslpnlpbb`
+- Legacy solver working directory: `/home/michael/gitrepos/gopslpnlpbb/src`
+- Python environment: repo-local `.venv`
+- `gurobipy` version: `13.0.2`
+- Gurobi license environment variables were set, and the terminal output reported the academic license expiring on 2027-06-29
+- Gurobi model size: 1778 variables, 144 binary variables, 144 integer variables, and 206160 constraints
+- Parameters: `MIPGap = 1e-6`, `TimeLimit = 60`, `epsilon = 1e-2`, LP/NLP B&B mode `plain` (`adjust_mode = ''`)
+
+Terminal output summary:
+
+- The model recognized Anytown pump symmetry as `['sym']`.
+- The callback reached 37 integer leaves.
+- Every reported integer leaf violated the hydraulic simulation, mainly at tank `T65` and sometimes at `T165`.
+- Representative violations included `t=3 tk=T65: -54.35`, `t=3 tk=T165: -111.60`, and `t=8 tk=T65: 547.02`.
+- The run ended with `Optimization was stopped with status 9` and `no solution found`.
+
+JSON summary:
+
+- Path: `output/bonvin_atm_anytown_candidate_run.json`
+- Gurobi status: `TIME_LIMIT` (`9`)
+- Gurobi runtime: `60.16815900802612` seconds
+- Wall time: `61.523` seconds
+- Node count: `1325`
+- Objective bound: `687.2836868303827`
+- Gurobi solution count: `0`
+- GOPS accepted solution count: `0`
+- Adjusted solution count: `0`
+- Schedule availability: `no_complete_unadjusted_commanded_pump_schedule`
+
+Artifact classification:
+
+| Artifact | Classification | Schedule evidence | AT(M) audit compatibility |
+| -------- | -------------- | ----------------- | ------------------------- |
+| `tools/run_candidate_anytown.py` | reproduction runner | Selects and runs the candidate GOPS Anytown path without importing `src/gops.py`; can export any accepted unadjusted incumbent schedule if one is found. | Provenance-only for this run. It produced no schedule because no GOPS incumbent was accepted. |
+| `output/bonvin_atm_anytown_candidate_run.json` | run summary | Records candidate metadata, environment assumptions, missing bounds status, model size, runtime status, and solution classification. | Not a schedule. It explicitly records `no_complete_unadjusted_commanded_pump_schedule`. |
+| Terminal callback output | solver/runtime evidence | Shows integer leaf candidates were evaluated and rejected by hydraulic simulation. | Not a schedule. Violated candidates must not be promoted into EPANET-BB schedule JSON. |
+| `output/res*.csv` | absent | The controlled runner does not call `solvebench()`, and no aggregate stats CSV was generated. | No schedule evidence. |
+
+This run does not prove that a longer controlled execution could never find a feasible GOPS schedule. It does complete the public-artifact reproduction slice for issue #7: the direct public path is blocked by missing Anytown bounds, and the controlled solver-faithful run did not recover a complete commanded pump schedule within the recorded execution. There is therefore no schedule-bearing artifact to hand to issue #8 from this run.
 
 ### Mapping Decisions
 
