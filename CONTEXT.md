@@ -44,6 +44,14 @@ _Avoid_: Start limit.
 A new experiment that adapts the GOPS method to run on the benchmark assumptions used by the EPANET-BB paper, including network, profile, horizon, pump reconstruction, and the operative actuation semantics of the published EPANET-BB artifacts. It is not a direct Bonvin public-artifact reproduction.
 _Avoid_: Bonvin reproduction when GOPS semantics or data have been changed.
 
+**EPANET-BB-equivalent GOPS experiment contract**:
+The durable artifact contract for the new GOPS-method experiment. It defines the three first-class cases (`atm-24h-na1`, `atm-24h-na2`, `atm-24h-na3`), required run metadata, output namespace, status vocabulary, and the rule that final experiment runs execute on `labma-sol`.
+_Avoid_: Letting ad hoc runner output become the comparison record.
+
+**Final GOPS experiment run**:
+A run of an EPANET-BB-equivalent GOPS case that is eligible for the final comparison because it follows the experiment contract and executes on `labma-sol`. Local runs are development, smoke, or diagnostic evidence unless a later decision explicitly promotes them.
+_Avoid_: Mixing local smoke-test evidence into final paper-facing comparisons.
+
 **Public artifact sufficiency**:
 The standard for deciding whether the public GOPS repository contains enough information to support a clamp-audit comparison. If complete schedules or reproducible schedule generation are absent, the result is a documented insufficiency rather than a fabricated comparison.
 _Avoid_: Filling gaps from literature summaries.

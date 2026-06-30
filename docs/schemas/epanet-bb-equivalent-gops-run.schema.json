@@ -1,0 +1,428 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/michaelsouza/gopslpnlpbb/docs/schemas/epanet-bb-equivalent-gops-run.schema.json",
+  "title": "EPANET-BB-equivalent GOPS run artifact",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "contract_version",
+    "track",
+    "case",
+    "git",
+    "environment",
+    "solver",
+    "runtime_settings",
+    "status",
+    "outputs"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": "epanet-bb-equivalent-gops-v1"
+    },
+    "track": {
+      "const": "epanet-bb-equivalent-gops"
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "case_id",
+        "benchmark_identity",
+        "horizon",
+        "na_max",
+        "pumps",
+        "tanks",
+        "activation_semantics"
+      ],
+      "properties": {
+        "case_id": {
+          "enum": [
+            "atm-24h-na1",
+            "atm-24h-na2",
+            "atm-24h-na3"
+          ]
+        },
+        "benchmark_identity": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "family",
+            "target",
+            "source_of_truth"
+          ],
+          "properties": {
+            "family": {
+              "const": "AnyTown Modified"
+            },
+            "target": {
+              "const": "EPANET-BB paper case"
+            },
+            "source_of_truth": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "horizon": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "periods",
+            "period_duration_hours"
+          ],
+          "properties": {
+            "periods": {
+              "const": 24
+            },
+            "period_duration_hours": {
+              "const": 1
+            }
+          }
+        },
+        "na_max": {
+          "enum": [
+            1,
+            2,
+            3
+          ]
+        },
+        "pumps": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "epanet_id"
+            ],
+            "properties": {
+              "epanet_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "gops_id": {
+                "type": "string"
+              },
+              "gops_arc": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 2,
+                "maxItems": 2
+              }
+            }
+          }
+        },
+        "tanks": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "target_ids",
+            "gops_representation"
+          ],
+          "properties": {
+            "target_ids": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "const": "65"
+                },
+                {
+                  "const": "165"
+                },
+                {
+                  "const": "265"
+                }
+              ],
+              "minItems": 3,
+              "maxItems": 3
+            },
+            "gops_representation": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "activation_semantics": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "target",
+            "accounting",
+            "initialization"
+          ],
+          "properties": {
+            "target": {
+              "const": "operative-epanet-bb-artifacts"
+            },
+            "accounting": {
+              "type": "string",
+              "minLength": 1
+            },
+            "initialization": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "case_id": {
+              "const": "atm-24h-na1"
+            },
+            "na_max": {
+              "const": 1
+            }
+          }
+        },
+        {
+          "properties": {
+            "case_id": {
+              "const": "atm-24h-na2"
+            },
+            "na_max": {
+              "const": 2
+            }
+          }
+        },
+        {
+          "properties": {
+            "case_id": {
+              "const": "atm-24h-na3"
+            },
+            "na_max": {
+              "const": 3
+            }
+          }
+        }
+      ]
+    },
+    "git": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "repository",
+        "branch",
+        "commit",
+        "dirty"
+      ],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "branch": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{7,40}$"
+        },
+        "dirty": {
+          "type": "boolean"
+        }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "run_class",
+        "host_name",
+        "working_directory",
+        "python_version",
+        "command"
+      ],
+      "properties": {
+        "run_class": {
+          "enum": [
+            "final",
+            "smoke",
+            "dev",
+            "diagnostic"
+          ]
+        },
+        "host_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "working_directory": {
+          "type": "string",
+          "minLength": 1
+        },
+        "python_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "command": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "solver": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "name",
+        "license_status"
+      ],
+      "properties": {
+        "name": {
+          "const": "Gurobi"
+        },
+        "gurobi_version": {
+          "type": "string"
+        },
+        "gurobipy_version": {
+          "type": "string"
+        },
+        "license_status": {
+          "enum": [
+            "valid",
+            "missing",
+            "restricted",
+            "expired",
+            "invalid",
+            "hostid_mismatch",
+            "not_checked",
+            "unknown"
+          ]
+        }
+      }
+    },
+    "runtime_settings": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "time_limit_seconds"
+      ],
+      "properties": {
+        "time_limit_seconds": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "mip_gap": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "mode": {
+          "type": "string"
+        }
+      }
+    },
+    "status": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "run_status",
+        "schedule_availability"
+      ],
+      "properties": {
+        "run_status": {
+          "enum": [
+            "success",
+            "time_limit_with_schedule",
+            "time_limit_no_schedule",
+            "infeasible",
+            "license_blocked",
+            "environment_blocked",
+            "solver_error",
+            "validation_failed",
+            "audit_failed"
+          ]
+        },
+        "schedule_availability": {
+          "enum": [
+            "complete_commanded_schedule",
+            "adjusted_only",
+            "incomplete",
+            "none"
+          ]
+        },
+        "detail": {
+          "type": "string"
+        }
+      }
+    },
+    "outputs": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "root",
+        "run_manifest"
+      ],
+      "properties": {
+        "root": {
+          "type": "string",
+          "pattern": "^output/epanet_bb_equivalent_gops/(atm-24h-na1|atm-24h-na2|atm-24h-na3)/[^/]+/?$"
+        },
+        "run_manifest": {
+          "type": "string",
+          "minLength": 1
+        },
+        "schedule_json": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "audit_json": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "solver_log": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "environment": {
+            "properties": {
+              "run_class": {
+                "const": "final"
+              }
+            },
+            "required": [
+              "run_class"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "environment": {
+            "properties": {
+              "host_name": {
+                "const": "labma-sol"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
