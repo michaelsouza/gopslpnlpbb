@@ -49,6 +49,7 @@ Record each investigation step here, with enough detail for another agent to rer
 | 2026-06-29 | #7 | `env GUROBI_HOME=/home/michael/gurobi1302/linux64 PATH=/home/michael/gurobi1302/linux64/bin:$PATH LD_LIBRARY_PATH=/home/michael/gurobi1302/linux64/lib:${LD_LIBRARY_PATH:-} GRB_LICENSE_FILE=/home/michael/gurobi.lic ./.venv/bin/python tools/run_candidate_anytown.py --time-limit 60 --output output/bonvin_atm_anytown_candidate_run.json` | Gurobi academic license was recognized and the controlled GOPS Anytown model ran for a 60-second limit. It ended with Gurobi status `TIME_LIMIT`, 1325 nodes, no accepted solution, and no complete unadjusted commanded pump schedule. Durable summary: `output/bonvin_atm_anytown_candidate_run.json`. |
 | 2026-06-30 | setup | `mv /home/michael/gurobi1302 /opt/gurobi`, `mv /home/michael/gurobi.lic /opt/gurobi/gurobi.lic`, `~/.zshrc`, `env -u GUROBI_HOME -u GRB_LICENSE_FILE -u LD_LIBRARY_PATH ./.venv/bin/python tools/run_candidate_anytown.py --time-limit 1 --output /tmp/gurobi_move_runner_check.json` | Completed local Gurobi migration. Shell setup and repo runner now use `GUROBI_HOME=/opt/gurobi/linux64` and `GRB_LICENSE_FILE=/opt/gurobi/gurobi.lic`. The runner recognized the academic license from `/opt/gurobi` and started the model without manually supplied Gurobi environment variables. |
 | 2026-06-30 | #8 | `output/bonvin_atm_anytown_candidate_run.json`, `output/bonvin_atm_notes.md` | Normalization and EPANET-BB audit were classified as not applicable because #7 produced no complete unadjusted commanded pump schedule. No `best_y`, `best_x`, schedule JSON, audit JSON, or normalizer was created. |
+| 2026-06-30 | #9 | `output/bonvin_atm_notes.md` | Finalized Outcome B: public GOPS artifacts are not enough to produce an audit-compatible Bonvin AT(M) schedule. Bonvin should remain a methodological/literature comparator, not a clamp-audit table entry, unless complete schedule-bearing artifacts are provided. |
 
 ## Evidence Categories
 
@@ -394,7 +395,7 @@ Therefore, EPANET-BB normalization was not run:
 
 This is not an EPANET-BB audit failure. It is a schedule-availability failure upstream of the audit seam. Creating `best_y` or `best_x` from aggregate runtime, objective bound, Gurobi gap, callback leaf output, or violated integer candidates would invent missing pump decisions and violate the workstream scope.
 
-The next Bonvin public-artifact task is to finalize issue #9 with Outcome B unless a new, complete schedule-bearing artifact is introduced.
+This not-applicable normalization result feeds the final Outcome B conclusion for issue #9.
 
 ### Mapping Decisions
 
@@ -408,10 +409,52 @@ The next Bonvin public-artifact task is to finalize issue #9 with Outcome B unle
 
 ### Final Outcome
 
-Choose exactly one final outcome when the dependent issues are complete.
+Issue #9 conclusion: **Outcome B - public GOPS artifacts are not enough.**
 
-- **Outcome A: Auditable schedules recovered.** List normalized schedule files, EPANET-BB audit outputs, mapping caveats, and audit event counts.
-- **Outcome B: Public GOPS artifacts are not enough.** List inspected files and commands, local run status, schedule availability evidence, insufficiency rationale, and exact data that would need to be requested from Bonvin et al.
+The public GOPS repository and the solver-faithful local run did not produce a complete Bonvin AT(M) commanded pump schedule that can be normalized to EPANET-BB schedule JSON or audited by the EPANET-BB clamp-audit tooling. This is a public-artifact sufficiency conclusion, not a statement that the Bonvin method cannot solve AT(M), and not a substitute for a new EPANET-BB-equivalent GOPS experiment.
+
+#### Evidence Summary
+
+- #3 benchmark identity: GOPS `ANY` is AnyTown-family but not a drop-in EPANET-BB `any-town.inp` instance. Public GOPS data differs in tank/source representation and selected profiles, with `T65` and `T165` only, three source rows, and profile/tariff values that do not match EPANET-BB.
+- #4 scheduling semantics: public GOPS has no configurable Bonvin-Costa `N = 1, 2, 3` or EPANET-BB `NA_max` case selector. It uses commanded pump-on variables, ignition/start variables, and a hardcoded start cap with symmetric-pump aggregation.
+- #5 solver status: the Gurobi academic setup works locally with `gurobipy 13.0.2`; later migration placed the runtime under `/opt/gurobi`. Solver licensing is no longer the blocking evidence for this workstream.
+- #6 public artifact inspection: the only tracked complete binary activity table is `output/sol.csv`, which is a Richmond 12-period schedule, not an Anytown/AT(M) 24-period schedule. Public `bounds/*.hdf` files contain flow/head bounds, not pump status schedules.
+- #7 candidate execution: controlled solver-faithful `ANY s 24 1` execution produced `output/bonvin_atm_anytown_candidate_run.json`, ended with Gurobi status `TIME_LIMIT`, reached 1325 nodes, and recorded zero accepted GOPS incumbents and `no_complete_unadjusted_commanded_pump_schedule`.
+- #8 normalization/audit: not applicable. No schedule JSON, `best_y`, `best_x`, EPANET-BB audit JSON, pump mapping, or audit event counts were produced because no complete commanded pump schedule existed to audit.
+
+#### Why Outcome A Does Not Apply
+
+Outcome A requires a schedule-bearing artifact: a complete commanded pump schedule for the target Bonvin AT(M) / `ANY s 24 1` case, plus enough provenance to map it into EPANET-BB. No inspected public artifact or local run produced that artifact.
+
+The following are not schedules and must not be promoted into schedules:
+
+- Bonvin literature runtime, cost, or optimality-gap values.
+- GOPS aggregate `res*.csv` statistics.
+- Gurobi objective bounds, MIP gaps, or node counts.
+- Violated integer leaf candidates printed by the callback.
+- Richmond `output/sol.csv` rows.
+- Inferred pump counts from benchmark structure alone.
+
+Using any of those as `best_y` or `best_x` would invent missing decisions and would break the audit-compatible schedule contract.
+
+#### Required Data From Bonvin et al.
+
+A future author-contact step would need at least:
+
+- Complete fixed-period commanded pump schedules for Bonvin AT(M), preferably for the reported `N = 1`, `N = 2`, and `N = 3` cases.
+- The exact benchmark data used for those schedules, including tank representation for tanks 165 and 265, any zero-length-pipe treatment, source representation, and initial tank volumes.
+- The demand and tariff profiles used in the AT(M) runs, with period timestamps and units.
+- The exact activation-limit semantics for each reported `N` case, including whether only starts or both starts and stops are constrained and how initial pump state is counted.
+- The GOPS instance key, solver mode, model settings, and any bound-tightening files required to reproduce the run, including an Anytown bounds artifact if it was used.
+- Provenance tying any schedule artifact to the reported Bonvin run: cost units, runtime, solver version, optimality gap, and whether the schedule is exact, incumbent, or time-adjusted.
+
+#### Reviewer-Response Language
+
+Suggested concise language:
+
+> We inspected the public GOPS repository and performed a solver-faithful Gurobi reproduction attempt for the public Anytown candidate. The public artifacts do not contain a complete Bonvin AT(M) pump schedule, and the local run did not recover an accepted fixed-period incumbent schedule. Because the EPANET-BB clamp audit requires a complete commanded schedule, we do not include Bonvin et al. in the clamp-audit table. We cite Bonvin et al. as an important LP/NLP branch-and-bound methodological comparator, and a clamp-audit entry would require the authors' complete AT(M) schedule artifacts or equivalent reproduction data.
+
+Issue `michaelsouza/gopslpnlpbb#1` remains open as the parent PRD unless the maintainer explicitly decides to close the overall workstream. The separate EPANET-BB-equivalent GOPS experiment remains tracked by issue `michaelsouza/gopslpnlpbb#10` and must not be conflated with this public-artifact sufficiency conclusion.
 
 ## Artifact Hygiene
 
