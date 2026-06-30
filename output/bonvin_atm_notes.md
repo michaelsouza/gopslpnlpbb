@@ -48,6 +48,7 @@ Record each investigation step here, with enough detail for another agent to rer
 | 2026-06-29 | #7 | `./.venv/bin/python tools/run_candidate_anytown.py --describe-only` | The runner records the candidate as public instance `ANY s 24 1`: `Anytown`, `Profile_5d_30m_smooth`, `01/01/2013 00:00` to `02/01/2013 00:00`, 24 one-hour periods, pump arcs `R1/R2/R3 -> J20`, with the known benchmark and activation-limit caveats. |
 | 2026-06-29 | #7 | `env GUROBI_HOME=/home/michael/gurobi1302/linux64 PATH=/home/michael/gurobi1302/linux64/bin:$PATH LD_LIBRARY_PATH=/home/michael/gurobi1302/linux64/lib:${LD_LIBRARY_PATH:-} GRB_LICENSE_FILE=/home/michael/gurobi.lic ./.venv/bin/python tools/run_candidate_anytown.py --time-limit 60 --output output/bonvin_atm_anytown_candidate_run.json` | Gurobi academic license was recognized and the controlled GOPS Anytown model ran for a 60-second limit. It ended with Gurobi status `TIME_LIMIT`, 1325 nodes, no accepted solution, and no complete unadjusted commanded pump schedule. Durable summary: `output/bonvin_atm_anytown_candidate_run.json`. |
 | 2026-06-30 | setup | `mv /home/michael/gurobi1302 /opt/gurobi`, `mv /home/michael/gurobi.lic /opt/gurobi/gurobi.lic`, `~/.zshrc`, `env -u GUROBI_HOME -u GRB_LICENSE_FILE -u LD_LIBRARY_PATH ./.venv/bin/python tools/run_candidate_anytown.py --time-limit 1 --output /tmp/gurobi_move_runner_check.json` | Completed local Gurobi migration. Shell setup and repo runner now use `GUROBI_HOME=/opt/gurobi/linux64` and `GRB_LICENSE_FILE=/opt/gurobi/gurobi.lic`. The runner recognized the academic license from `/opt/gurobi` and started the model without manually supplied Gurobi environment variables. |
+| 2026-06-30 | #8 | `output/bonvin_atm_anytown_candidate_run.json`, `output/bonvin_atm_notes.md` | Normalization and EPANET-BB audit were classified as not applicable because #7 produced no complete unadjusted commanded pump schedule. No `best_y`, `best_x`, schedule JSON, audit JSON, or normalizer was created. |
 
 ## Evidence Categories
 
@@ -370,6 +371,31 @@ Artifact classification:
 
 This run does not prove that a longer controlled execution could never find a feasible GOPS schedule. It does complete the public-artifact reproduction slice for issue #7: the direct public path is blocked by missing Anytown bounds, and the controlled solver-faithful run did not recover a complete commanded pump schedule within the recorded execution. There is therefore no schedule-bearing artifact to hand to issue #8 from this run.
 
+### Normalization And EPANET-BB Audit Applicability
+
+Issue #8 conclusion: **not applicable, because no GOPS schedule was recovered.**
+
+The prerequisite check for #8 is the schedule-availability classification from #6 and #7:
+
+- #6 found no public Anytown / Bonvin AT(M) schedule artifact in the tracked GOPS repository.
+- #7 produced `output/bonvin_atm_anytown_candidate_run.json`, but its `solution_classification.schedule_availability` is `no_complete_unadjusted_commanded_pump_schedule`.
+- #7 recorded zero accepted GOPS incumbents, zero adjusted solutions, and zero Gurobi solutions for the controlled 60-second run.
+- The only solution-like public artifact remains `output/sol.csv`, which is Richmond-specific and cannot be mapped to the Anytown three-pump schedule without inventing decisions.
+
+Therefore, EPANET-BB normalization was not run:
+
+- No Bonvin/GOPS schedule JSON was emitted.
+- No `best_y` pump-count sequence was derived.
+- No `best_x` per-pump status matrix was derived.
+- No GOPS-to-EPANET-BB pump mapping was applied to a schedule artifact.
+- No EPANET-BB single-schedule clamp audit was run.
+- No EPANET-BB audit JSON was emitted.
+- No audit event counts are available for Bonvin/GOPS.
+
+This is not an EPANET-BB audit failure. It is a schedule-availability failure upstream of the audit seam. Creating `best_y` or `best_x` from aggregate runtime, objective bound, Gurobi gap, callback leaf output, or violated integer candidates would invent missing pump decisions and violate the workstream scope.
+
+The next Bonvin public-artifact task is to finalize issue #9 with Outcome B unless a new, complete schedule-bearing artifact is introduced.
+
 ### Mapping Decisions
 
 - If a GOPS schedule is recovered, record how GOPS pump activity maps to EPANET-BB `best_y` and optional `best_x`.
@@ -377,8 +403,8 @@ This run does not prove that a longer controlled execution could never find a fe
 
 ### EPANET-BB Audit Results
 
-- Record schedule JSON paths, audit JSON paths, command lines, zero-flow threshold, and event-count summaries.
-- Distinguish commanded pump schedules from effective hydraulic operation under EPANET-BB simulator semantics.
+- No EPANET-BB audit was run for Bonvin/GOPS in issue #8 because there was no complete commanded pump schedule to audit.
+- Any future audit must start from a schedule-bearing GOPS artifact and must preserve the distinction between commanded pump schedules and effective hydraulic operation under EPANET-BB simulator semantics.
 
 ### Final Outcome
 
