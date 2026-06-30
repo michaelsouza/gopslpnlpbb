@@ -47,6 +47,7 @@ Record each investigation step here, with enough detail for another agent to rer
 | 2026-06-29 | #6 | `rg -n -i "sol\.csv\|solution\|solutions\|output\|pumpvals\|parsesolution\|testsolution\|activity\|inactive\|xk\(\|svar" README.md src output data docs` | Public code has an input-validation path for externally supplied schedules and in-memory incumbent schedules, but no tracked Bonvin/GOPS output writes complete `svar`/`activity` schedules. |
 | 2026-06-29 | #7 | `./.venv/bin/python tools/run_candidate_anytown.py --describe-only` | The runner records the candidate as public instance `ANY s 24 1`: `Anytown`, `Profile_5d_30m_smooth`, `01/01/2013 00:00` to `02/01/2013 00:00`, 24 one-hour periods, pump arcs `R1/R2/R3 -> J20`, with the known benchmark and activation-limit caveats. |
 | 2026-06-29 | #7 | `env GUROBI_HOME=/home/michael/gurobi1302/linux64 PATH=/home/michael/gurobi1302/linux64/bin:$PATH LD_LIBRARY_PATH=/home/michael/gurobi1302/linux64/lib:${LD_LIBRARY_PATH:-} GRB_LICENSE_FILE=/home/michael/gurobi.lic ./.venv/bin/python tools/run_candidate_anytown.py --time-limit 60 --output output/bonvin_atm_anytown_candidate_run.json` | Gurobi academic license was recognized and the controlled GOPS Anytown model ran for a 60-second limit. It ended with Gurobi status `TIME_LIMIT`, 1325 nodes, no accepted solution, and no complete unadjusted commanded pump schedule. Durable summary: `output/bonvin_atm_anytown_candidate_run.json`. |
+| 2026-06-30 | setup | `mv /home/michael/gurobi1302 /opt/gurobi`, `mv /home/michael/gurobi.lic /opt/gurobi/gurobi.lic`, `~/.zshrc`, `env -u GUROBI_HOME -u GRB_LICENSE_FILE -u LD_LIBRARY_PATH ./.venv/bin/python tools/run_candidate_anytown.py --time-limit 1 --output /tmp/gurobi_move_runner_check.json` | Completed local Gurobi migration. Shell setup and repo runner now use `GUROBI_HOME=/opt/gurobi/linux64` and `GRB_LICENSE_FILE=/opt/gurobi/gurobi.lic`. The runner recognized the academic license from `/opt/gurobi` and started the model without manually supplied Gurobi environment variables. |
 
 ## Evidence Categories
 
@@ -67,11 +68,12 @@ Later issues should fill these sections instead of scattering conclusions across
 - Record Python version, package versions, `gurobipy` version, and Gurobi license status when tested.
 - Treat missing or restricted Gurobi licensing as a partial blocker, not as evidence that public schedules do or do not exist.
 - Gurobi/`gurobipy` is the solver-faithful path. Any non-Gurobi attempt must be documented as a diagnostic fallback, not a Bonvin/GOPS reproduction.
-- Local solver setup as of 2026-06-29:
-  - Gurobi install root: `/home/michael/gurobi1302/linux64`.
-  - License file: `/home/michael/gurobi.lic`, outside the repository.
+- Current local solver setup as of 2026-06-30:
+  - Gurobi install root: `/opt/gurobi/linux64`.
+  - License file: `/opt/gurobi/gurobi.lic`, outside the repository.
   - Python environment: repo-local `.venv` with `gurobipy 13.0.2`.
-  - Required runtime environment: set `GUROBI_HOME`, add `$GUROBI_HOME/bin` to `PATH`, add `$GUROBI_HOME/lib` to `LD_LIBRARY_PATH`, and set `GRB_LICENSE_FILE=/home/michael/gurobi.lic`.
+  - Required runtime environment: set `GUROBI_HOME`, add `$GUROBI_HOME/bin` to `PATH`, add `$GUROBI_HOME/lib` to `LD_LIBRARY_PATH`, and set `GRB_LICENSE_FILE=/opt/gurobi/gurobi.lic`.
+  - `tools/run_candidate_anytown.py` defaults to these `/opt/gurobi` paths when the shell has not already set Gurobi environment variables.
   - Gurobi commands must run outside the Codex sandbox when license validation needs the machine hostid; inside the sandbox `grbprobe` cannot read the hostid and reports a mismatch.
   - `gurobipy` initially exposed a size-limited restricted license, but the GOPS AnyTown model is too large for that restricted license. The academic license resolves this size limit outside the sandbox.
 
@@ -318,6 +320,12 @@ Command from repository root:
 
 ```sh
 env GUROBI_HOME=/home/michael/gurobi1302/linux64 PATH=/home/michael/gurobi1302/linux64/bin:$PATH LD_LIBRARY_PATH=/home/michael/gurobi1302/linux64/lib:${LD_LIBRARY_PATH:-} GRB_LICENSE_FILE=/home/michael/gurobi.lic ./.venv/bin/python tools/run_candidate_anytown.py --time-limit 60 --output output/bonvin_atm_anytown_candidate_run.json
+```
+
+After the local Gurobi migration on 2026-06-30, the same runner defaults to `/opt/gurobi` paths, so the normal command is:
+
+```sh
+./.venv/bin/python tools/run_candidate_anytown.py --time-limit 60 --output output/bonvin_atm_anytown_candidate_run.json
 ```
 
 Runtime assumptions and observed solver state:

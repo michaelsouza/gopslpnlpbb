@@ -21,6 +21,8 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
 OUTPUT = ROOT / "output" / "bonvin_atm_anytown_candidate_run.json"
+DEFAULT_GUROBI_HOME = Path("/opt/gurobi/linux64")
+DEFAULT_GUROBI_LICENSE = Path("/opt/gurobi/gurobi.lic")
 
 CANDIDATE = {
     "public_instance_id": "ANY s 24 1",
@@ -69,6 +71,30 @@ def _write_json(path: Path, data: dict[str, Any]) -> None:
 def _prepare_src_imports() -> None:
     sys.path.insert(0, str(SRC))
     os.chdir(SRC)
+
+
+def _prepend_env_path(name: str, path: Path) -> None:
+    value = str(path)
+    current = os.environ.get(name)
+    parts = current.split(os.pathsep) if current else []
+    if value not in parts:
+        os.environ[name] = os.pathsep.join([value, *parts]) if parts else value
+
+
+def _configure_gurobi_environment() -> dict[str, Any]:
+    os.environ.setdefault("GUROBI_HOME", str(DEFAULT_GUROBI_HOME))
+    os.environ.setdefault("GRB_LICENSE_FILE", str(DEFAULT_GUROBI_LICENSE))
+
+    gurobi_home = Path(os.environ["GUROBI_HOME"])
+    _prepend_env_path("PATH", gurobi_home / "bin")
+    _prepend_env_path("LD_LIBRARY_PATH", gurobi_home / "lib")
+
+    return {
+        "GUROBI_HOME": os.environ.get("GUROBI_HOME"),
+        "GRB_LICENSE_FILE": os.environ.get("GRB_LICENSE_FILE"),
+        "LD_LIBRARY_PATH_set": bool(os.environ.get("LD_LIBRARY_PATH")),
+        "PATH_contains_gurobi_bin": str(gurobi_home / "bin") in os.environ.get("PATH", "").split(os.pathsep),
+    }
 
 
 def _status_name(gp: Any, status: int | None) -> str | None:
@@ -167,6 +193,7 @@ def describe_candidate() -> dict[str, Any]:
 
 
 def run_candidate(args: argparse.Namespace) -> dict[str, Any]:
+    gurobi_environment = _configure_gurobi_environment()
     result: dict[str, Any] = {
         **describe_candidate(),
         "command": [str(Path(sys.argv[0]).name), *sys.argv[1:]],
@@ -179,9 +206,7 @@ def run_candidate(args: argparse.Namespace) -> dict[str, Any]:
             "mode": args.mode,
         },
         "environment": {
-            "GUROBI_HOME_set": bool(os.environ.get("GUROBI_HOME")),
-            "GRB_LICENSE_FILE_set": bool(os.environ.get("GRB_LICENSE_FILE")),
-            "LD_LIBRARY_PATH_set": bool(os.environ.get("LD_LIBRARY_PATH")),
+            **gurobi_environment,
         },
     }
 
