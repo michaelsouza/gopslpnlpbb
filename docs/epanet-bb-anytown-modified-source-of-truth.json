@@ -1,0 +1,977 @@
+{
+  "schema_version": "epanet-bb-anytown-source-v1",
+  "implemented_for": "michaelsouza/gopslpnlpbb#12",
+  "parent_prd": "michaelsouza/gopslpnlpbb#10",
+  "source_project": {
+    "path": "C:\\Users\\Michael\\gitrepos\\epanet-bb",
+    "branch": "reviewer-fixes",
+    "commit": "34cabb94eae4f85f90efd49ada0a0f2fb019a326",
+    "dirty_worktree": false
+  },
+  "source_priority": [
+    "published schedule JSON artifacts",
+    "EPANET-BB code behavior",
+    "networks/any-town.inp",
+    "manuscript prose and equations when they do not conflict"
+  ],
+  "source_files": [
+    {
+      "path": "networks/any-town.inp",
+      "role": "operative network, demand profile, tariff profile, pump/tank representation",
+      "sha256": "c6104ab9283c9b7eb06bd3ace44bca2a4dcf4776f86886fd7508a35ce2dad9c3"
+    },
+    {
+      "path": "paper/paper.tex",
+      "role": "manuscript equations and reported context",
+      "sha256": "97e669d0e0609b5450581572774c555268ebcece428be15fdf163d05ac35e778"
+    },
+    {
+      "path": "src/CLI/BBSolver.cpp",
+      "role": "operative best_y to best_x mapping and actuation accounting",
+      "sha256": "88938c70792e43bec83e6eb8566d7fe2d5f6323152a253bf951a57632a8a0437"
+    },
+    {
+      "path": "src/CLI/main-eval.cpp",
+      "role": "fixed-schedule evaluator using the same actuation accounting",
+      "sha256": "8928a681d6cb86f9b9e4f48580bc63f0a198280be8b717011b32335ace1daede"
+    },
+    {
+      "path": "src/CLI/BBConstraints.cpp",
+      "role": "pump/tank/node ids, pump order, schedule JSON output",
+      "sha256": "a23ea9f0a7785abc375f76a5912be71ca9ef78f1ce5238ac5a0f3e5a2b7ba72d"
+    }
+  ],
+  "benchmark": {
+    "name": "AnyTown Modified",
+    "canonical_network_file": "networks/any-town.inp",
+    "network_counts": {
+      "junction_rows": 19,
+      "reservoir_rows": 1,
+      "tank_rows": 3,
+      "pipe_rows": 41,
+      "pump_rows": 3,
+      "valve_rows": 0,
+      "pipe_plus_pump_links": 44
+    },
+    "units": {
+      "flow": "CMH",
+      "head": "m",
+      "headloss": "H-W"
+    },
+    "reservoirs": [
+      {
+        "id": "10",
+        "head_m": 3.048
+      }
+    ],
+    "tanks": [
+      {
+        "id": "65",
+        "elevation_m": 0,
+        "init_level_m": 66.93,
+        "min_level_m": 66.53,
+        "max_level_m": 71.53,
+        "diameter_m": 21.55,
+        "min_volume": 0
+      },
+      {
+        "id": "165",
+        "elevation_m": 0,
+        "init_level_m": 66.93,
+        "min_level_m": 66.53,
+        "max_level_m": 71.53,
+        "diameter_m": 21.55,
+        "min_volume": 0
+      },
+      {
+        "id": "265",
+        "elevation_m": 0,
+        "init_level_m": 66.93,
+        "min_level_m": 66.53,
+        "max_level_m": 71.53,
+        "diameter_m": 21.55,
+        "min_volume": 0
+      }
+    ],
+    "pressure_checks": [
+      {
+        "node": "55",
+        "min_pressure_m": 42.0
+      },
+      {
+        "node": "90",
+        "min_pressure_m": 51.0
+      },
+      {
+        "node": "170",
+        "min_pressure_m": 30.0
+      }
+    ]
+  },
+  "horizon": {
+    "h_max": 24,
+    "decision_periods": 24,
+    "decision_period_seconds": 3600,
+    "best_y_length": 25,
+    "best_x_length": 75,
+    "hydraulic_timestep_seconds": 1800,
+    "pattern_timestep_seconds": 3600,
+    "initial_pump_count": 0,
+    "initial_best_x_by_pump": {
+      "111": 0,
+      "222": 0,
+      "333": 0
+    }
+  },
+  "demand": {
+    "pattern_values": {
+      "DEM": [
+        0.7,
+        0.7,
+        0.7,
+        0.6,
+        0.6,
+        0.6,
+        1.2,
+        1.2,
+        1.2,
+        1.3,
+        1.3,
+        1.3,
+        1.2,
+        1.2,
+        1.2,
+        1.0,
+        1.0,
+        1.0,
+        0.9,
+        0.9,
+        0.9,
+        0.7,
+        0.7,
+        0.7
+      ],
+      "DEM55": "same_as_DEM",
+      "DEM90": "same_as_DEM",
+      "DEM170": "same_as_DEM"
+    },
+    "junctions": [
+      {
+        "id": "20",
+        "elevation_m": 6.096,
+        "base_demand_cmh": 113.56235,
+        "pattern": "DEM"
+      },
+      {
+        "id": "30",
+        "elevation_m": 15.24,
+        "base_demand_cmh": 45.42494,
+        "pattern": "DEM"
+      },
+      {
+        "id": "110",
+        "elevation_m": 15.24,
+        "base_demand_cmh": 113.56235,
+        "pattern": "DEM"
+      },
+      {
+        "id": "70",
+        "elevation_m": 15.24,
+        "base_demand_cmh": 113.56235,
+        "pattern": "DEM"
+      },
+      {
+        "id": "60",
+        "elevation_m": 15.24,
+        "base_demand_cmh": 113.56235,
+        "pattern": "DEM"
+      },
+      {
+        "id": "90",
+        "elevation_m": 15.24,
+        "base_demand_cmh": 227.1247,
+        "pattern": "DEM90"
+      },
+      {
+        "id": "100",
+        "elevation_m": 15.24,
+        "base_demand_cmh": 113.56235,
+        "pattern": "DEM"
+      },
+      {
+        "id": "40",
+        "elevation_m": 15.24,
+        "base_demand_cmh": 45.42494,
+        "pattern": "DEM"
+      },
+      {
+        "id": "50",
+        "elevation_m": 15.24,
+        "base_demand_cmh": 45.42494,
+        "pattern": "DEM"
+      },
+      {
+        "id": "80",
+        "elevation_m": 15.24,
+        "base_demand_cmh": 113.56235,
+        "pattern": "DEM"
+      },
+      {
+        "id": "150",
+        "elevation_m": 36.576,
+        "base_demand_cmh": 45.42494,
+        "pattern": "DEM"
+      },
+      {
+        "id": "140",
+        "elevation_m": 24.384,
+        "base_demand_cmh": 45.42494,
+        "pattern": "DEM"
+      },
+      {
+        "id": "170",
+        "elevation_m": 36.576,
+        "base_demand_cmh": 45.42494,
+        "pattern": "DEM170"
+      },
+      {
+        "id": "130",
+        "elevation_m": 36.576,
+        "base_demand_cmh": 45.42494,
+        "pattern": "DEM"
+      },
+      {
+        "id": "160",
+        "elevation_m": 36.576,
+        "base_demand_cmh": 181.69976,
+        "pattern": "DEM"
+      },
+      {
+        "id": "120",
+        "elevation_m": 36.576,
+        "base_demand_cmh": 45.42494,
+        "pattern": "DEM"
+      },
+      {
+        "id": "55",
+        "elevation_m": 24.384,
+        "base_demand_cmh": 22.71247,
+        "pattern": "DEM55"
+      },
+      {
+        "id": "75",
+        "elevation_m": 24.384,
+        "base_demand_cmh": 22.71247,
+        "pattern": "DEM"
+      },
+      {
+        "id": "115",
+        "elevation_m": 24.384,
+        "base_demand_cmh": 22.71247,
+        "pattern": "DEM"
+      }
+    ]
+  },
+  "energy_tariff": {
+    "pattern_id": "PRICES",
+    "values": [
+      18.14,
+      18.14,
+      18.14,
+      18.14,
+      18.14,
+      18.14,
+      18.14,
+      35.28,
+      35.28,
+      35.28,
+      35.28,
+      35.28,
+      35.28,
+      35.28,
+      35.28,
+      35.28,
+      35.28,
+      80.97,
+      80.97,
+      80.97,
+      80.97,
+      18.14,
+      18.14,
+      18.14
+    ],
+    "global_efficiency_percent": 75,
+    "global_price": 0,
+    "demand_charge": 0
+  },
+  "pumps": {
+    "source_inp_order": [
+      "222",
+      "111",
+      "333"
+    ],
+    "best_x_order": [
+      "111",
+      "222",
+      "333"
+    ],
+    "fixed_speed_parallel_pumps": [
+      {
+        "id": "111",
+        "from": "10",
+        "to": "20",
+        "head_curve": "1",
+        "speed_pattern": "PMP111",
+        "efficiency_curve": "2",
+        "price_pattern": "PRICES"
+      },
+      {
+        "id": "222",
+        "from": "10",
+        "to": "20",
+        "head_curve": "1",
+        "speed_pattern": "PMP222",
+        "efficiency_curve": "2",
+        "price_pattern": "PRICES"
+      },
+      {
+        "id": "333",
+        "from": "10",
+        "to": "20",
+        "head_curve": "1",
+        "speed_pattern": "PMP333",
+        "efficiency_curve": "2",
+        "price_pattern": "PRICES"
+      }
+    ],
+    "head_curve_1_points": [
+      [
+        0,
+        91.44
+      ],
+      [
+        454.2494,
+        89.0016
+      ],
+      [
+        908.4988,
+        82.296
+      ],
+      [
+        1362.7482,
+        70.104
+      ],
+      [
+        1816.9976,
+        55.1688
+      ]
+    ],
+    "efficiency_curve_2_points": [
+      [
+        0,
+        0
+      ],
+      [
+        454.2494,
+        50
+      ],
+      [
+        908.4988,
+        65
+      ],
+      [
+        1362.7482,
+        55
+      ],
+      [
+        1816.9976,
+        40
+      ]
+    ]
+  },
+  "activation_semantics": {
+    "target_name": "epanet-bb-operative-separate-start-stop-budgets-v1",
+    "description": "Per-pump starts and stops are budgeted separately; the initial h=0 to h=1 transition is not charged to either budget.",
+    "initial_state": "all pumps off at h=0",
+    "start_transition": "0_to_1",
+    "stop_transition": "1_to_0",
+    "per_pump_allowed_starts": "NA_max",
+    "per_pump_allowed_stops": "NA_max",
+    "historical_count_loop": "BBSolver::computeAllowedSwitches loops i = 2; i < current_h; ++i",
+    "initial_transition_charged": false,
+    "pump_sorting": "Least Used Selection: switch-ons prefer remaining starts then stops; switch-offs prefer remaining stops then starts.",
+    "manuscript_equation_conflict": "paper.tex states sum_{h=2..T} |x[j,h] - x[j,h-1]| <= NA_max, which is a total transition limit; operative code uses separate start/stop budgets."
+  },
+  "target_cases": [
+    {
+      "case_id": "atm-24h-na1",
+      "NA_max": 1,
+      "source_schedule_artifact": "paper/data/run_Souza2026_a_01.json",
+      "best_cost": 3567.988684015254,
+      "duration_seconds": 3.692231000000002,
+      "best_y": [
+        0,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        1,
+        1,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "best_x": [
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        0,
+        1,
+        1,
+        0,
+        1,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        0,
+        1,
+        1,
+        0,
+        1,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      "pump_schedules_h1_to_h24": {
+        "111": "111111100000000000000111",
+        "222": "000011111111111100000000",
+        "333": "000000000000011111000000"
+      },
+      "operative_transition_counts": [
+        {
+          "pump": "111",
+          "starts_excluding_initial": 1,
+          "stops_excluding_initial": 1,
+          "starts_including_initial": 2,
+          "stops_including_initial": 1
+        },
+        {
+          "pump": "222",
+          "starts_excluding_initial": 1,
+          "stops_excluding_initial": 1,
+          "starts_including_initial": 1,
+          "stops_including_initial": 1
+        },
+        {
+          "pump": "333",
+          "starts_excluding_initial": 1,
+          "stops_excluding_initial": 1,
+          "starts_including_initial": 1,
+          "stops_including_initial": 1
+        }
+      ]
+    },
+    {
+      "case_id": "atm-24h-na2",
+      "NA_max": 2,
+      "source_schedule_artifact": "paper/data/run_Souza2026_a_02.json",
+      "best_cost": 3472.8912332008294,
+      "duration_seconds": 493.1143470000003,
+      "best_y": [
+        0,
+        2,
+        2,
+        2,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        0,
+        1,
+        1,
+        2,
+        3,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1
+      ],
+      "best_x": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        0,
+        1,
+        1,
+        0,
+        1,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        0,
+        1,
+        1,
+        0,
+        1,
+        1,
+        0,
+        1,
+        1,
+        0,
+        1,
+        1,
+        0,
+        1,
+        1,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        0,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      "pump_schedules_h1_to_h24": {
+        "111": "111000000000011110001111",
+        "222": "111111111111000110000000",
+        "333": "000000111111000010000000"
+      },
+      "operative_transition_counts": [
+        {
+          "pump": "111",
+          "starts_excluding_initial": 2,
+          "stops_excluding_initial": 2,
+          "starts_including_initial": 3,
+          "stops_including_initial": 2
+        },
+        {
+          "pump": "222",
+          "starts_excluding_initial": 1,
+          "stops_excluding_initial": 2,
+          "starts_including_initial": 2,
+          "stops_including_initial": 2
+        },
+        {
+          "pump": "333",
+          "starts_excluding_initial": 2,
+          "stops_excluding_initial": 2,
+          "starts_including_initial": 2,
+          "stops_including_initial": 2
+        }
+      ]
+    },
+    {
+      "case_id": "atm-24h-na3",
+      "NA_max": 3,
+      "source_schedule_artifact": "paper/data/run_Souza2026_a_03.json",
+      "best_cost": 3443.458721124687,
+      "duration_seconds": 10011.228562000002,
+      "best_y": [
+        0,
+        3,
+        2,
+        2,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        0,
+        1,
+        1,
+        2,
+        3,
+        0,
+        0,
+        0,
+        1,
+        2,
+        1,
+        0
+      ],
+      "best_x": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        1,
+        0,
+        1,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        0,
+        1,
+        1,
+        0,
+        1,
+        1,
+        0,
+        1,
+        1,
+        0,
+        1,
+        1,
+        0,
+        1,
+        1,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      "pump_schedules_h1_to_h24": {
+        "111": "100000111111000010000000",
+        "222": "111000000000011110001100",
+        "333": "111111111111000110000110"
+      },
+      "operative_transition_counts": [
+        {
+          "pump": "111",
+          "starts_excluding_initial": 2,
+          "stops_excluding_initial": 3,
+          "starts_including_initial": 3,
+          "stops_including_initial": 3
+        },
+        {
+          "pump": "222",
+          "starts_excluding_initial": 2,
+          "stops_excluding_initial": 3,
+          "starts_including_initial": 3,
+          "stops_including_initial": 3
+        },
+        {
+          "pump": "333",
+          "starts_excluding_initial": 2,
+          "stops_excluding_initial": 3,
+          "starts_including_initial": 3,
+          "stops_including_initial": 3
+        }
+      ]
+    }
+  ],
+  "published_schedule_artifacts": [
+    {
+      "path": "paper/data/run_Cimorelli2020_a_01.json",
+      "method": "Cimorelli2020",
+      "NA_max": 1,
+      "best_cost": 3634.67,
+      "duration_seconds": 663,
+      "best_x_length": 75,
+      "best_y_length": 25,
+      "sha256": "c3fabf94139db6e152830118bac1a8a28a023ecd558f29982363ca356f48bb3e"
+    },
+    {
+      "path": "paper/data/run_Cimorelli2020_a_02.json",
+      "method": "Cimorelli2020",
+      "NA_max": 2,
+      "best_cost": 3580.11,
+      "duration_seconds": 663,
+      "best_x_length": 75,
+      "best_y_length": 25,
+      "sha256": "e27519e7f1a91e56db948cc60d436015d825ed8f312c6fefe6951ed35e31424d"
+    },
+    {
+      "path": "paper/data/run_Cimorelli2020_a_03.json",
+      "method": "Cimorelli2020",
+      "NA_max": 3,
+      "best_cost": 3575.54,
+      "duration_seconds": 663,
+      "best_x_length": 75,
+      "best_y_length": 25,
+      "sha256": "cceaa06079051d78ea15907fe3ac06db13a2d53ca24aabcfd4d8c1a88d8ebbf0"
+    },
+    {
+      "path": "paper/data/run_Costa2016_a_01.json",
+      "method": "Costa2016",
+      "NA_max": 1,
+      "best_cost": 3916.98,
+      "duration_seconds": 425,
+      "best_x_length": 75,
+      "best_y_length": 25,
+      "sha256": "362f3d7df6269cbe316e7ef46d22a14d21499f6755ca6d01dbae64c41f973689"
+    },
+    {
+      "path": "paper/data/run_Costa2016_a_02.json",
+      "method": "Costa2016",
+      "NA_max": 2,
+      "best_cost": 3618.59,
+      "duration_seconds": 36914,
+      "best_x_length": 75,
+      "best_y_length": 25,
+      "sha256": "22b80aaa742cc305fc381aa0e0a082868c815f6199551aae190a48b9bb191b64"
+    },
+    {
+      "path": "paper/data/run_Costa2016_a_03.json",
+      "method": "Costa2016",
+      "NA_max": 3,
+      "best_cost": 3578.67,
+      "duration_seconds": 292032.0,
+      "best_x_length": 75,
+      "best_y_length": 25,
+      "sha256": "c4634d9f10e1222c1fe84112057b39aae17ca1d31268d2aeb7a9b25d1fedf297"
+    },
+    {
+      "path": "paper/data/run_Paola2025_a_01.json",
+      "method": "Paola2025",
+      "NA_max": 1,
+      "best_cost": 3911.52,
+      "duration_seconds": 72,
+      "best_x_length": 75,
+      "best_y_length": 25,
+      "sha256": "394d58f96d049a0e97356599f2b7dc262b83a11d9c6551042d43a4714c26641d"
+    },
+    {
+      "path": "paper/data/run_Paola2025_a_02.json",
+      "method": "Paola2025",
+      "NA_max": 2,
+      "best_cost": 3606.22,
+      "duration_seconds": 904,
+      "best_x_length": 75,
+      "best_y_length": 25,
+      "sha256": "9cffa1d6715b3f0a982df57812d0db5479bb03526a967000022bc9e4e4eb4076"
+    },
+    {
+      "path": "paper/data/run_Paola2025_a_03.json",
+      "method": "Paola2025",
+      "NA_max": 3,
+      "best_cost": 3577.4,
+      "duration_seconds": 960,
+      "best_x_length": 75,
+      "best_y_length": 25,
+      "sha256": "ad4d2ad0d5e96d7e56f12753602ea2ab939e1932437f708d749d95962bd6da1c"
+    },
+    {
+      "path": "paper/data/run_Souza2026_a_01.json",
+      "method": "Souza2026",
+      "NA_max": 1,
+      "best_cost": 3567.988684015254,
+      "duration_seconds": 3.692231000000002,
+      "best_x_length": 75,
+      "best_y_length": 25,
+      "sha256": "0b996d0539c60bc0c94a55518d8eae039957893983e173f6eafa19def22ccc38"
+    },
+    {
+      "path": "paper/data/run_Souza2026_a_02.json",
+      "method": "Souza2026",
+      "NA_max": 2,
+      "best_cost": 3472.8912332008294,
+      "duration_seconds": 493.1143470000003,
+      "best_x_length": 75,
+      "best_y_length": 25,
+      "sha256": "4b912a0701d469521579f8e9f74f3d1f60f66d211e55ab343a1aec25694cfba6"
+    },
+    {
+      "path": "paper/data/run_Souza2026_a_03.json",
+      "method": "Souza2026",
+      "NA_max": 3,
+      "best_cost": 3443.458721124687,
+      "duration_seconds": 10011.228562000002,
+      "best_x_length": 75,
+      "best_y_length": 25,
+      "sha256": "9f1b78b77bdfa0734927116f9781941e58114b72b51bc9a82457473ead43e9bc"
+    }
+  ],
+  "mismatches": [
+    {
+      "topic": "actuation_semantics",
+      "manuscript": "single total transition budget sum |x[j,h] - x[j,h-1]| <= NA_max",
+      "operative_target": "separate per-pump start and stop budgets, initial transition uncharged"
+    },
+    {
+      "topic": "network_count_wording",
+      "manuscript": "44 pipes",
+      "operative_target": "41 INP pipe rows plus 3 pump rows"
+    },
+    {
+      "topic": "pump_order",
+      "inp_order": [
+        "222",
+        "111",
+        "333"
+      ],
+      "best_x_order": [
+        "111",
+        "222",
+        "333"
+      ]
+    },
+    {
+      "topic": "comparison_summary_cost",
+      "artifact": "paper/data/comparison_summary.csv",
+      "conflicting_value": "EPANET-BB NA_max=3 cost 3444.71",
+      "operative_target": "paper/data/run_Souza2026_a_03.json cost 3443.458721124687"
+    }
+  ]
+}
