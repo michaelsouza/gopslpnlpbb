@@ -75,6 +75,10 @@ The JSON Schema in
 `docs/schemas/epanet-bb-equivalent-gops-run.schema.json` defines the
 machine-readable contract.
 
+The source-of-truth benchmark extraction for the three cases is recorded in
+`docs/epanet-bb-source-of-truth-cases.md`, with a machine-readable companion at
+`docs/epanet-bb-source-of-truth-cases.json`.
+
 | Group | Required fields |
 | ----- | --------------- |
 | Contract | `contract_version`, `track` |

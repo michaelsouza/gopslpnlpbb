@@ -1,0 +1,335 @@
+{
+  "schema_version": 1,
+  "implemented_for": "michaelsouza/gopslpnlpbb#12",
+  "track": "epanet-bb-equivalent-gops",
+  "contract_version": "epanet-bb-equivalent-gops-v1",
+  "extracted_from": {
+    "repository_path": "../epanet-bb",
+    "branch": "reviewer-fixes",
+    "commit": "7c37c68de38993828f08ba2e70453da2583f4754",
+    "dirty_worktree_observed": false,
+    "extraction_date": "2026-07-01"
+  },
+  "source_of_truth_policy": {
+    "primary": [
+      "../epanet-bb/networks/any-town.inp",
+      "../epanet-bb/paper/data/run_*_a_*.json",
+      "../epanet-bb/src/CLI/BBSolver.cpp",
+      "../epanet-bb/src/CLI/BBConstraints.cpp",
+      "../epanet-bb/src/CLI/BBAudit.cpp"
+    ],
+    "secondary": [
+      "../epanet-bb/paper/paper.tex",
+      "../epanet-bb/README.md",
+      "../epanet-bb/scripts/*.py"
+    ],
+    "decision": "When manuscript prose or equations conflict with executable code and published artifacts, use the executable code and published artifacts as the comparison target."
+  },
+  "benchmark_identity": {
+    "family": "AnyTown Modified",
+    "target": "EPANET-BB paper case",
+    "network_file": "networks/any-town.inp",
+    "network_file_relative_to_this_repo": "../epanet-bb/networks/any-town.inp",
+    "operational_network_counts_from_inp": {
+      "junctions": 19,
+      "reservoirs": 1,
+      "tanks": 3,
+      "hydraulic_nodes_total": 23,
+      "pipes": 41,
+      "pumps": 3,
+      "valves": 0,
+      "links_total": 44
+    },
+    "manuscript_count_note": "paper.tex describes 44 pipes and 25 nodes, but the operative INP file contains 41 pipe rows plus 3 pump links, for 44 total links, and 23 hydraulic nodes. Later translation should match the INP file."
+  },
+  "horizon": {
+    "periods": 24,
+    "period_duration_hours": 1,
+    "duration_in_inp": "24:00",
+    "hydraulic_timestep": "0:30",
+    "pattern_timestep": "1:00",
+    "report_timestep": "1:00",
+    "schedule_vector_length": 25,
+    "initial_schedule_index": 0
+  },
+  "demand": {
+    "patterns": {
+      "DEM": [
+        0.7,
+        0.7,
+        0.7,
+        0.6,
+        0.6,
+        0.6,
+        1.2,
+        1.2,
+        1.2,
+        1.3,
+        1.3,
+        1.3,
+        1.2,
+        1.2,
+        1.2,
+        1.0,
+        1.0,
+        1.0,
+        0.9,
+        0.9,
+        0.9,
+        0.7,
+        0.7,
+        0.7
+      ],
+      "DEM55": "same as DEM in the operative INP file",
+      "DEM90": "same as DEM in the operative INP file",
+      "DEM170": "same as DEM in the operative INP file"
+    },
+    "base_demand_units": "CMH, inherited from the INP OPTIONS section",
+    "special_patterns": {
+      "55": "DEM55",
+      "90": "DEM90",
+      "170": "DEM170"
+    }
+  },
+  "tariff": {
+    "pattern_id": "PRICES",
+    "values": [
+      18.14,
+      18.14,
+      18.14,
+      18.14,
+      18.14,
+      18.14,
+      18.14,
+      35.28,
+      35.28,
+      35.28,
+      35.28,
+      35.28,
+      35.28,
+      35.28,
+      35.28,
+      35.28,
+      35.28,
+      80.97,
+      80.97,
+      80.97,
+      80.97,
+      18.14,
+      18.14,
+      18.14
+    ],
+    "pump_energy_pattern_usage": {
+      "111": "PRICES",
+      "222": "PRICES",
+      "333": "PRICES"
+    }
+  },
+  "source": {
+    "node_id": "10",
+    "head": 3.048
+  },
+  "pumps": [
+    {
+      "epanet_id": "111",
+      "from_node": "10",
+      "to_node": "20",
+      "pump_curve_id": "1",
+      "efficiency_curve_id": "2",
+      "speed_pattern": "PMP111",
+      "best_x_column": 0
+    },
+    {
+      "epanet_id": "222",
+      "from_node": "10",
+      "to_node": "20",
+      "pump_curve_id": "1",
+      "efficiency_curve_id": "2",
+      "speed_pattern": "PMP222",
+      "best_x_column": 1
+    },
+    {
+      "epanet_id": "333",
+      "from_node": "10",
+      "to_node": "20",
+      "pump_curve_id": "1",
+      "efficiency_curve_id": "2",
+      "speed_pattern": "PMP333",
+      "best_x_column": 2
+    }
+  ],
+  "pump_mapping": {
+    "best_y": "Aggregate commanded pump count, length 25, with best_y[0] = 0.",
+    "best_x": "Flattened per-pump binary status, length 75, grouped by hour. Hour 0 occupies entries 0..2 and hours 1..24 occupy the remaining groups.",
+    "column_order": [
+      "111",
+      "222",
+      "333"
+    ],
+    "ordering_evidence": "BBConstraints stores pumps in a std::map keyed by IDs initialized as 111, 222, 333; analysis scripts use PUMP_ORDER = [111, 222, 333]."
+  },
+  "tanks": {
+    "target_ids": [
+      "65",
+      "165",
+      "265"
+    ],
+    "initial_level_m": 66.93,
+    "minimum_level_m": 66.53,
+    "maximum_level_m": 71.53,
+    "diameter_m": 21.55,
+    "gops_representation_requirement": "Translate all three storage tanks explicitly; do not collapse or replace them without recording a deliberate representation difference."
+  },
+  "pressure_checks": {
+    "55": 42.0,
+    "90": 51.0,
+    "170": 30.0
+  },
+  "activation_semantics": {
+    "target": "operative-epanet-bb-artifacts",
+    "case_parameter_name": "NA_max",
+    "code_argument": "--max_actuations",
+    "accounting": "The operative code keeps separate per-pump budgets for 0->1 starts and 1->0 stops. Each budget is initialized to NA_max.",
+    "initialization": "Schedules include hour 0 with all pumps off. The first commanded hour is h=1. Code starts counting historical transitions from h=2, so the initial h=0 -> h=1 start is represented in best_x but is not decremented as a historical transition when building later hours.",
+    "manuscript_mismatch": "paper.tex equation (actuation_limits) defines sum_{h=2}^T |x_{j,h} - x_{j,h-1}| <= NA_max, a total bidirectional transition limit. That is not the same as the operative separate start/stop budgets used by BBSolver, main-eval, and BBAudit.",
+    "downstream_rule": "For GOPS-equivalent cases, match the operative code/artifact semantics unless a later ADR changes the target."
+  },
+  "cases": [
+    {
+      "case_id": "atm-24h-na1",
+      "na_max": 1,
+      "benchmark_identity": "AnyTown Modified, 24-hour EPANET-BB paper case",
+      "published_epanet_bb_schedule": "../epanet-bb/paper/data/run_Souza2026_a_01.json"
+    },
+    {
+      "case_id": "atm-24h-na2",
+      "na_max": 2,
+      "benchmark_identity": "AnyTown Modified, 24-hour EPANET-BB paper case",
+      "published_epanet_bb_schedule": "../epanet-bb/paper/data/run_Souza2026_a_02.json"
+    },
+    {
+      "case_id": "atm-24h-na3",
+      "na_max": 3,
+      "benchmark_identity": "AnyTown Modified, 24-hour EPANET-BB paper case",
+      "published_epanet_bb_schedule": "../epanet-bb/paper/data/run_Souza2026_a_03.json"
+    }
+  ],
+  "published_schedule_corpus": [
+    {
+      "method": "Costa2016",
+      "na_max": 1,
+      "file": "../epanet-bb/paper/data/run_Costa2016_a_01.json",
+      "best_y_length": 25,
+      "best_x_length": 75,
+      "cost": 3916.98,
+      "duration_seconds": 425
+    },
+    {
+      "method": "Costa2016",
+      "na_max": 2,
+      "file": "../epanet-bb/paper/data/run_Costa2016_a_02.json",
+      "best_y_length": 25,
+      "best_x_length": 75,
+      "cost": 3618.59,
+      "duration_seconds": 36914
+    },
+    {
+      "method": "Costa2016",
+      "na_max": 3,
+      "file": "../epanet-bb/paper/data/run_Costa2016_a_03.json",
+      "best_y_length": 25,
+      "best_x_length": 75,
+      "cost": 3578.67,
+      "duration_seconds": 292032
+    },
+    {
+      "method": "Cimorelli2020",
+      "na_max": 1,
+      "file": "../epanet-bb/paper/data/run_Cimorelli2020_a_01.json",
+      "best_y_length": 25,
+      "best_x_length": 75,
+      "cost": 3634.67,
+      "duration_seconds": 663
+    },
+    {
+      "method": "Cimorelli2020",
+      "na_max": 2,
+      "file": "../epanet-bb/paper/data/run_Cimorelli2020_a_02.json",
+      "best_y_length": 25,
+      "best_x_length": 75,
+      "cost": 3580.11,
+      "duration_seconds": 663
+    },
+    {
+      "method": "Cimorelli2020",
+      "na_max": 3,
+      "file": "../epanet-bb/paper/data/run_Cimorelli2020_a_03.json",
+      "best_y_length": 25,
+      "best_x_length": 75,
+      "cost": 3575.54,
+      "duration_seconds": 663
+    },
+    {
+      "method": "Paola2025",
+      "na_max": 1,
+      "file": "../epanet-bb/paper/data/run_Paola2025_a_01.json",
+      "best_y_length": 25,
+      "best_x_length": 75,
+      "cost": 3911.52,
+      "duration_seconds": 72
+    },
+    {
+      "method": "Paola2025",
+      "na_max": 2,
+      "file": "../epanet-bb/paper/data/run_Paola2025_a_02.json",
+      "best_y_length": 25,
+      "best_x_length": 75,
+      "cost": 3606.22,
+      "duration_seconds": 904
+    },
+    {
+      "method": "Paola2025",
+      "na_max": 3,
+      "file": "../epanet-bb/paper/data/run_Paola2025_a_03.json",
+      "best_y_length": 25,
+      "best_x_length": 75,
+      "cost": 3577.4,
+      "duration_seconds": 960
+    },
+    {
+      "method": "Souza2026",
+      "na_max": 1,
+      "file": "../epanet-bb/paper/data/run_Souza2026_a_01.json",
+      "best_y_length": 25,
+      "best_x_length": 75,
+      "cost": 3567.988684015254,
+      "duration_seconds": 3.692231000000002
+    },
+    {
+      "method": "Souza2026",
+      "na_max": 2,
+      "file": "../epanet-bb/paper/data/run_Souza2026_a_02.json",
+      "best_y_length": 25,
+      "best_x_length": 75,
+      "cost": 3472.8912332008294,
+      "duration_seconds": 493.1143470000003
+    },
+    {
+      "method": "Souza2026",
+      "na_max": 3,
+      "file": "../epanet-bb/paper/data/run_Souza2026_a_03.json",
+      "best_y_length": 25,
+      "best_x_length": 75,
+      "cost": 3443.458721124687,
+      "duration_seconds": 10011.228562000002
+    }
+  ],
+  "translation_requirements_for_issue_14": [
+    "Construct GOPS cases from networks/any-town.inp, not from the GOPS public Anytown data by name alone.",
+    "Preserve 24 one-hour commanded periods plus the explicit h=0 all-off initial schedule slot.",
+    "Preserve pump identity order 111, 222, 333 when writing best_x or comparing per-pump schedules.",
+    "Use three separate cases for NA_max 1, 2, and 3.",
+    "Implement separate start and stop budgets per pump, excluding the h=0 -> h=1 initialization from historical transition depletion, to match EPANET-BB operative code.",
+    "Use the PRICES tariff pattern and DEM-family demand pattern from the INP source unless a deliberate representation difference is documented."
+  ]
+}
