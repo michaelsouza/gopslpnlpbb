@@ -85,6 +85,122 @@
       "DEM170": "same as DEM in the operative INP file"
     },
     "base_demand_units": "CMH, inherited from the INP OPTIONS section",
+    "junctions": [
+      {
+        "id": "20",
+        "elevation": 6.096,
+        "base_demand": 113.56235,
+        "pattern": "DEM"
+      },
+      {
+        "id": "30",
+        "elevation": 15.24,
+        "base_demand": 45.42494,
+        "pattern": "DEM"
+      },
+      {
+        "id": "110",
+        "elevation": 15.24,
+        "base_demand": 113.56235,
+        "pattern": "DEM"
+      },
+      {
+        "id": "70",
+        "elevation": 15.24,
+        "base_demand": 113.56235,
+        "pattern": "DEM"
+      },
+      {
+        "id": "60",
+        "elevation": 15.24,
+        "base_demand": 113.56235,
+        "pattern": "DEM"
+      },
+      {
+        "id": "90",
+        "elevation": 15.24,
+        "base_demand": 227.1247,
+        "pattern": "DEM90"
+      },
+      {
+        "id": "100",
+        "elevation": 15.24,
+        "base_demand": 113.56235,
+        "pattern": "DEM"
+      },
+      {
+        "id": "40",
+        "elevation": 15.24,
+        "base_demand": 45.42494,
+        "pattern": "DEM"
+      },
+      {
+        "id": "50",
+        "elevation": 15.24,
+        "base_demand": 45.42494,
+        "pattern": "DEM"
+      },
+      {
+        "id": "80",
+        "elevation": 15.24,
+        "base_demand": 113.56235,
+        "pattern": "DEM"
+      },
+      {
+        "id": "150",
+        "elevation": 36.576,
+        "base_demand": 45.42494,
+        "pattern": "DEM"
+      },
+      {
+        "id": "140",
+        "elevation": 24.384,
+        "base_demand": 45.42494,
+        "pattern": "DEM"
+      },
+      {
+        "id": "170",
+        "elevation": 36.576,
+        "base_demand": 45.42494,
+        "pattern": "DEM170"
+      },
+      {
+        "id": "130",
+        "elevation": 36.576,
+        "base_demand": 45.42494,
+        "pattern": "DEM"
+      },
+      {
+        "id": "160",
+        "elevation": 36.576,
+        "base_demand": 181.69976,
+        "pattern": "DEM"
+      },
+      {
+        "id": "120",
+        "elevation": 36.576,
+        "base_demand": 45.42494,
+        "pattern": "DEM"
+      },
+      {
+        "id": "55",
+        "elevation": 24.384,
+        "base_demand": 22.71247,
+        "pattern": "DEM55"
+      },
+      {
+        "id": "75",
+        "elevation": 24.384,
+        "base_demand": 22.71247,
+        "pattern": "DEM"
+      },
+      {
+        "id": "115",
+        "elevation": 24.384,
+        "base_demand": 22.71247,
+        "pattern": "DEM"
+      }
+    ],
     "special_patterns": {
       "55": "DEM55",
       "90": "DEM90",
@@ -326,6 +442,7 @@
   ],
   "translation_requirements_for_issue_14": [
     "Construct GOPS cases from networks/any-town.inp, not from the GOPS public Anytown data by name alone.",
+    "Preserve each junction base demand and its assigned demand pattern from the INP source.",
     "Preserve 24 one-hour commanded periods plus the explicit h=0 all-off initial schedule slot.",
     "Preserve pump identity order 111, 222, 333 when writing best_x or comparing per-pump schedules.",
     "Use three separate cases for NA_max 1, 2, and 3.",

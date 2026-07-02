@@ -68,6 +68,12 @@ Only `final` runs should be used in the final comparison. A local run can help
 develop or test the path, but it is not final evidence unless a later ADR or
 issue explicitly promotes that policy.
 
+An environment-readiness smoke run may use one representative case id while
+recording `applies_to_cases` for the full experiment surface. Such a smoke run
+checks repository, Python, and solver availability only; it may report
+`schedule_availability = "none"` because it does not solve a model or export a
+commanded pump schedule.
+
 ## Required Metadata
 
 The primary `run.json` manifest must include the following metadata groups.
@@ -106,6 +112,7 @@ Use these status values for `status.run_status`:
 | `infeasible` | Solver or model concluded the case is infeasible |
 | `license_blocked` | Gurobi could not run because the license was missing, expired, restricted, or invalid for the host/model |
 | `environment_blocked` | Required runtime environment, data, repo state, or dependency is missing |
+| `environment_ready` | Environment-readiness smoke run completed without solving a model or producing a schedule |
 | `solver_error` | Solver failed for a reason other than a declared license blocker |
 | `validation_failed` | The run produced an artifact that violates this contract or the case contract |
 | `audit_failed` | A complete schedule exists, but the downstream EPANET-BB audit failed or could not run |
@@ -176,5 +183,7 @@ A future validator or runner should reject an artifact when:
   is missing.
 - A run reports `success` or `time_limit_with_schedule` without a complete
   commanded schedule.
+- An environment-readiness smoke run reports a solver-result status such as
+  `success` instead of `environment_ready`.
 - The artifact is named or stored as a Bonvin public-artifact sufficiency
   output.

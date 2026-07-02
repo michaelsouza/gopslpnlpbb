@@ -1,0 +1,140 @@
+{
+  "contract_version": "epanet-bb-equivalent-gops-v1",
+  "track": "epanet-bb-equivalent-gops",
+  "issue": "michaelsouza/gopslpnlpbb#13",
+  "parent_issue": "michaelsouza/gopslpnlpbb#10",
+  "run_id": "labma-sol-readiness-20260702T011123Z",
+  "generated_at_utc": "2026-07-02T01:55:29Z",
+  "applies_to_cases": [
+    "atm-24h-na1",
+    "atm-24h-na2",
+    "atm-24h-na3"
+  ],
+  "case": {
+    "case_id": "atm-24h-na1",
+    "benchmark_identity": {
+      "family": "AnyTown Modified",
+      "target": "EPANET-BB paper case",
+      "source_of_truth": "docs/epanet-bb-source-of-truth-cases.json"
+    },
+    "horizon": {
+      "periods": 24,
+      "period_duration_hours": 1
+    },
+    "na_max": 1,
+    "pumps": [
+      {
+        "epanet_id": "111"
+      },
+      {
+        "epanet_id": "222"
+      },
+      {
+        "epanet_id": "333"
+      }
+    ],
+    "tanks": {
+      "target_ids": [
+        "65",
+        "165",
+        "265"
+      ],
+      "gops_representation": "not exercised by this environment-readiness smoke run"
+    },
+    "activation_semantics": {
+      "target": "operative-epanet-bb-artifacts",
+      "accounting": "separate per-pump start and stop budgets equal to NA_max",
+      "initialization": "explicit h=0 all-off slot; h=0 to h=1 transition is represented but not treated as historical budget depletion"
+    }
+  },
+  "git": {
+    "repository": "git@github.com:michaelsouza/gopslpnlpbb.git",
+    "branch": "bonvin-atm-audit",
+    "commit": "0865c9a61f2ae8969aa7c896259018901850cbd1",
+    "dirty": true,
+    "working_tree_role": "labma-sol worktree at GOPS import smoke time",
+    "dirty_detail": "git status showed only untracked output/epanet_bb_equivalent_gops/ after writing the remote smoke artifact; branch and commit were synchronized to origin/bonvin-atm-audit."
+  },
+  "environment": {
+    "run_class": "smoke",
+    "host_name": "labma-sol",
+    "host_hostname": "sol",
+    "platform": "Linux-6.12.90+deb13.1-amd64-x86_64-with-glibc2.41",
+    "working_directory": "/home/michael/gitrepos/gopslpnlpbb",
+    "python_version": "3.13.5 (main, May  5 2026, 21:05:52) [GCC 14.2.0]",
+    "python_executable": "/home/michael/gitrepos/gopslpnlpbb/.venv/bin/python",
+    "python_prefix": "/home/michael/gitrepos/gopslpnlpbb/.venv",
+    "command": [
+      "ssh",
+      "-o",
+      "BatchMode=yes",
+      "-o",
+      "ConnectTimeout=8",
+      "labma-sol",
+      "cd \"$HOME/gitrepos/gopslpnlpbb\" && mkdir -p output/epanet_bb_equivalent_gops/atm-24h-na1/labma-sol-readiness-20260702T011123Z && ./.venv/bin/python -c 'import importlib, json, os, platform, subprocess, sys; from datetime import datetime, timezone; from pathlib import Path; repo=Path.cwd(); src=repo/\"src\"; sys.path.insert(0, str(src)); os.chdir(src); names=[\"gurobipy\",\"instance\",\"convexrelaxation\",\"lpnlpbb\",\"pandas\",\"numpy\"]; labels={\"gurobipy\":\"gurobipy\",\"instance\":\"Instance\",\"convexrelaxation\":\"convexrelaxation\",\"lpnlpbb\":\"lpnlpbb\",\"pandas\":\"pandas\",\"numpy\":\"numpy\"}; mods={name: importlib.import_module(name) for name in names}; gp=mods[\"gurobipy\"]; env=gp.Env(empty=True); env.setParam(\"OutputFlag\",0); env.start(); modules={labels[name]: {\"module\": name, \"file\": getattr(mod, \"__file__\", None), \"version\": getattr(mod, \"__version__\", None)} for name, mod in mods.items()}; payload={\"generated_at_utc\": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace(\"+00:00\",\"Z\"), \"host\": {\"ssh_alias\":\"labma-sol\", \"hostname\": platform.node(), \"platform\": platform.platform()}, \"repository\": {\"path\": str(repo), \"branch\": subprocess.check_output([\"git\",\"branch\",\"--show-current\"], text=True).strip(), \"commit\": subprocess.check_output([\"git\",\"rev-parse\",\"HEAD\"], text=True).strip(), \"dirty\": bool(subprocess.check_output([\"git\",\"status\",\"--porcelain\"], text=True).strip()), \"remote_origin_url\": subprocess.check_output([\"git\",\"remote\",\"get-url\",\"origin\"], text=True).strip()}, \"python\": {\"executable\": sys.executable, \"version\": sys.version, \"prefix\": sys.prefix}, \"solver\": {\"name\":\"Gurobi\", \"gurobipy_version\": \".\".join(map(str, gp.gurobi.version())), \"gurobi_version\":\".\".join(map(str, gp.gurobi.version())), \"license_status\":\"valid\"}, \"gops_import_surface\": {\"source_path\": str(src), \"modules\": modules}}; path=repo/\"output/epanet_bb_equivalent_gops/atm-24h-na1/labma-sol-readiness-20260702T011123Z/remote_probe.json\"; path.write_text(json.dumps(payload, indent=2, sort_keys=True)+\"\\n\", encoding=\"utf-8\"); print(json.dumps(payload, indent=2, sort_keys=True))'"
+    ],
+    "remote_artifact_path": "/home/michael/gitrepos/gopslpnlpbb/output/epanet_bb_equivalent_gops/atm-24h-na1/labma-sol-readiness-20260702T011123Z/remote_probe.json",
+    "gops_import_surface": {
+      "source_path": "/home/michael/gitrepos/gopslpnlpbb/src",
+      "modules": {
+        "Instance": {
+          "file": "/home/michael/gitrepos/gopslpnlpbb/src/instance.py",
+          "module": "instance",
+          "version": null
+        },
+        "convexrelaxation": {
+          "file": "/home/michael/gitrepos/gopslpnlpbb/src/convexrelaxation.py",
+          "module": "convexrelaxation",
+          "version": null
+        },
+        "lpnlpbb": {
+          "file": "/home/michael/gitrepos/gopslpnlpbb/src/lpnlpbb.py",
+          "module": "lpnlpbb",
+          "version": null
+        },
+        "gurobipy": {
+          "file": "/home/michael/gitrepos/gopslpnlpbb/.venv/lib/python3.13/site-packages/gurobipy/__init__.py",
+          "module": "gurobipy",
+          "version": "13.0.2"
+        },
+        "numpy": {
+          "file": "/home/michael/gitrepos/gopslpnlpbb/.venv/lib/python3.13/site-packages/numpy/__init__.py",
+          "module": "numpy",
+          "version": "2.5.0"
+        },
+        "pandas": {
+          "file": "/home/michael/gitrepos/gopslpnlpbb/.venv/lib/python3.13/site-packages/pandas/__init__.py",
+          "module": "pandas",
+          "version": "3.0.4"
+        }
+      }
+    },
+    "non_blocking_warnings": [
+      "Python emitted SyntaxWarning messages for invalid escape sequences in src/primalheuristic.py docstrings during lpnlpbb import; imports completed successfully."
+    ]
+  },
+  "solver": {
+    "name": "Gurobi",
+    "gurobi_version": "13.0.2",
+    "gurobipy_version": "13.0.2",
+    "license_status": "valid",
+    "license_contents_recorded": false
+  },
+  "runtime_settings": {
+    "time_limit_seconds": null,
+    "mip_gap": null,
+    "mode": "labma-sol-environment-readiness-smoke"
+  },
+  "status": {
+    "run_status": "environment_ready",
+    "schedule_availability": "none",
+    "detail": "Remote repository, Python, GOPS import surface, gurobipy, and a startable Gurobi environment are available on labma-sol. This smoke run did not solve a GOPS model and did not produce a commanded pump schedule."
+  },
+  "outputs": {
+    "root": "output/epanet_bb_equivalent_gops/atm-24h-na1/labma-sol-readiness-20260702T011123Z",
+    "run_manifest": "output/epanet_bb_equivalent_gops/atm-24h-na1/labma-sol-readiness-20260702T011123Z/run.json",
+    "schedule_json": null,
+    "audit_json": null,
+    "solver_log": null
+  }
+}

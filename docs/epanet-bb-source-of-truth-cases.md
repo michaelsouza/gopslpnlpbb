@@ -55,12 +55,41 @@ The INP file defines:
   and 1-hour report timestep.
 - Demand pattern `DEM`, with node-specific patterns `DEM55`, `DEM90`, and
   `DEM170` carrying the same 24 values in the operative INP file.
+- Per-junction base demands from the `[JUNCTIONS]` section, in CMH, assigned
+  to the demand patterns listed below.
 - Tariff pattern `PRICES` with 24 hourly values.
 
 Operational counts from the INP file are 19 junctions, 1 reservoir, 3 tanks,
 41 pipe rows, 3 pump links, no valves, and 44 total links. The manuscript prose
 describes "44 pipes" and "25 nodes"; the executable target for this workstream
 is the INP structure, where the 44 count is total links when pumps are included.
+
+## Demand Surface
+
+The executable demand surface is the product of each junction's base demand and
+its assigned hourly pattern.
+
+| Junction | Elevation | Base demand | Pattern |
+| --- | ---: | ---: | --- |
+| `20` | 6.096 | 113.56235 | `DEM` |
+| `30` | 15.24 | 45.42494 | `DEM` |
+| `110` | 15.24 | 113.56235 | `DEM` |
+| `70` | 15.24 | 113.56235 | `DEM` |
+| `60` | 15.24 | 113.56235 | `DEM` |
+| `90` | 15.24 | 227.1247 | `DEM90` |
+| `100` | 15.24 | 113.56235 | `DEM` |
+| `40` | 15.24 | 45.42494 | `DEM` |
+| `50` | 15.24 | 45.42494 | `DEM` |
+| `80` | 15.24 | 113.56235 | `DEM` |
+| `150` | 36.576 | 45.42494 | `DEM` |
+| `140` | 24.384 | 45.42494 | `DEM` |
+| `170` | 36.576 | 45.42494 | `DEM170` |
+| `130` | 36.576 | 45.42494 | `DEM` |
+| `160` | 36.576 | 181.69976 | `DEM` |
+| `120` | 36.576 | 45.42494 | `DEM` |
+| `55` | 24.384 | 22.71247 | `DEM55` |
+| `75` | 24.384 | 22.71247 | `DEM` |
+| `115` | 24.384 | 22.71247 | `DEM` |
 
 ## First-Class Cases
 
@@ -142,6 +171,8 @@ A GOPS-runnable representation for the next issue should validate these facts
 before solver execution:
 
 - It targets `../epanet-bb/networks/any-town.inp`, not GOPS `Anytown` by name.
+- It preserves each junction base demand and assigned demand pattern from the
+  INP source.
 - It keeps three tanks `65`, `165`, and `265` with the level bounds above.
 - It keeps three pumps `111`, `222`, and `333`, mapped to `best_x` columns in
   that order.
@@ -161,7 +192,19 @@ The extraction used these commands:
 ```bash
 git -C ../epanet-bb status --short --branch
 git -C ../epanet-bb rev-parse HEAD
-awk '{gsub(/\r/, "")} /^\\[/ {section=$0; next} ...' ../epanet-bb/networks/any-town.inp
+awk '
+  BEGIN {
+    want["[OPTIONS]"]=1
+    want["[JUNCTIONS]"]=1
+    want["[TANKS]"]=1
+    want["[PUMPS]"]=1
+    want["[PATTERNS]"]=1
+    want["[TIMES]"]=1
+  }
+  {gsub(/\r/, "")}
+  /^\[/ {section=$0}
+  want[section] {print}
+' ../epanet-bb/networks/any-town.inp
 jq -r '[input_filename, .max_actuations, .inp_file, (.best_y|length), (.best_x|length), .best_cost, .duration] | @tsv' ../epanet-bb/paper/data/run_*_a_*.json
 nl -ba ../epanet-bb/networks/any-town.inp
 nl -ba ../epanet-bb/src/CLI/BBSolver.cpp
