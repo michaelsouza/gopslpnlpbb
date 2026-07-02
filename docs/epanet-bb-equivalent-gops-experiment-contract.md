@@ -151,9 +151,12 @@ write `run.json`, but it must not fabricate `schedule.json`.
 
 The case metadata must declare the operative activation semantics used for the
 run. For this PRD, the target is the EPANET-BB operative artifact/code
-semantics, not the public GOPS hardcoded start-limit semantics. Later issues
-must document the exact start/stop and initialization accounting before a run
-can be treated as comparable.
+semantics, not the public GOPS hardcoded start-limit semantics. The adapted
+case path is labeled `epanet-bb-operative-separate-start-stop-budgets-v1`:
+starts and stops are budgeted separately per pump, each budget equals
+`NA_max`, and the explicit hour-0 to hour-1 initialization transition is not
+charged to either budget. It must not inherit public GOPS symmetric-pump
+ordering constraints that would exclude valid EPANET-BB pump-status schedules.
 
 The original Bonvin/GOPS start-limit path remains a separate reproduction
 surface. Any adapted `NA_max` implementation must be labeled as

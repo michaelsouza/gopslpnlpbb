@@ -11,18 +11,24 @@ from gurobipy import GRB
 import outerapproximation as oa
 from instance import Instance
 import datetime as dt
+from activation import (
+    ActivationConfig,
+    public_gops_start_limit_config,
+)
 
 
 # !!! check round values
 # noinspection PyArgumentList
-def build_model(inst: Instance, epsilon: float, pumpvals=None):
+def build_model(inst: Instance, epsilon: float, pumpvals=None, activation_config: ActivationConfig | None = None):
     """Build the convex relaxation gurobi model."""
 
+    activation_config = activation_config or public_gops_start_limit_config()
     milp = gp.Model('Pumping_Scheduling')
 
     qvar = {}  # arc flow
     svar = {}  # pump/valve activity status
     ivar = {}  # pump ignition status
+    stopvar = {}  # pump stop status
     hvar = {}  # node head
 
     nperiods = inst.nperiods()
@@ -121,27 +127,11 @@ def build_model(inst: Instance, epsilon: float, pumpvals=None):
                 milp.addConstr(hvar[j, t] - hvar[i, t] <= c[1] * qvar[(i, j), t]
                                + (c[0] - pump.offdhmax) * svar[(i, j), t] + pump.offdhmax, name=f'hku{n}({i},{j},{t})')
 
-    # PUMP SWITCHING
-    sympumps = inst.symmetries
-    uniquepumps = inst.pumps_without_sym()
-    print('symmetries:', uniquepumps)
-
-    def getv(vdict, pump, t):
-        return gp.quicksum(vdict[a, t] for a in sympumps) if pump == 'sym' else vdict[pump, t]
-
-    # !!! check the max ignition constraint for the symmetric group
-    # !!! make ivar[a,0] = svar[a,0]
-    for a in uniquepumps:
-        rhs = 6 * len(sympumps) if a == 'sym' else 6 - svar[a, 0]
-        milp.addConstr(gp.quicksum(getv(ivar, a, t) for t in range(1, nperiods)) <= rhs)
-        for t in range(1, nperiods):
-            milp.addConstr(getv(ivar, a, t) >= getv(svar, a, t) - getv(svar, a, t - 1))
-            if inst.tsduration == dt.timedelta(minutes=30) and t < inst.nperiods() - 1:
-                # minimum 1 hour activity
-                milp.addConstr(getv(svar, a, t + 1) + getv(svar, a, t - 1) >= getv(svar, a, t))
+    _add_pump_switching_constraints(milp, inst, svar, ivar, stopvar, nperiods, activation_config)
 
     # PUMP DEPENDENCIES
-    if sympumps:
+    sympumps = inst.symmetries
+    if sympumps and activation_config.enforce_symmetric_ordering:
         for t in horizon:
             for i, pump in enumerate(sympumps[:-1]):
                 milp.addConstr(ivar[pump, t] >= ivar[sympumps[i + 1], t])
@@ -172,8 +162,59 @@ def build_model(inst: Instance, epsilon: float, pumpvals=None):
 
     milp._svar = svar
     milp._ivar = ivar
+    milp._stopvar = stopvar
     milp._qvar = qvar
     milp._hvar = hvar
     milp._obj = milp.getObjective()
+    milp._activation_config = activation_config
 
     return milp
+
+
+def _add_pump_switching_constraints(milp, inst, svar, ivar, stopvar, nperiods, activation_config):
+    if activation_config.uses_separate_stop_budget:
+        _add_epanet_bb_switching_constraints(milp, inst, svar, ivar, stopvar, nperiods, activation_config)
+    else:
+        _add_public_gops_switching_constraints(milp, inst, svar, ivar, nperiods, activation_config)
+
+
+def _add_public_gops_switching_constraints(milp, inst, svar, ivar, nperiods, activation_config):
+    sympumps = inst.symmetries
+    uniquepumps = inst.pumps_without_sym()
+    print('symmetries:', uniquepumps)
+
+    def getv(vdict, pump, t):
+        return gp.quicksum(vdict[a, t] for a in sympumps) if pump == 'sym' else vdict[pump, t]
+
+    # Public GOPS/Bonvin path: hardcoded start limit, including initial status.
+    for a in uniquepumps:
+        rhs = activation_config.public_start_limit * len(sympumps) if a == 'sym' \
+            else activation_config.public_start_limit - svar[a, 0]
+        milp.addConstr(gp.quicksum(getv(ivar, a, t) for t in range(1, nperiods)) <= rhs)
+        for t in range(1, nperiods):
+            milp.addConstr(getv(ivar, a, t) >= getv(svar, a, t) - getv(svar, a, t - 1))
+            if inst.tsduration == dt.timedelta(minutes=30) and t < inst.nperiods() - 1:
+                # minimum 1 hour activity
+                milp.addConstr(getv(svar, a, t + 1) + getv(svar, a, t - 1) >= getv(svar, a, t))
+
+
+def _add_epanet_bb_switching_constraints(milp, inst, svar, ivar, stopvar, nperiods, activation_config):
+    if activation_config.na_max not in (1, 2, 3):
+        raise ValueError(f"EPANET-BB activation config requires NA_max 1, 2, or 3, got {activation_config.na_max}")
+
+    print('activation semantics:', activation_config.semantics, 'NA_max:', activation_config.na_max)
+
+    for a in inst.pumps:
+        i, j = a
+        start_terms = []
+        stop_terms = []
+        if not activation_config.exclude_initial_transition:
+            start_terms.append(svar[a, 0])
+        for t in range(1, nperiods):
+            stopvar[a, t] = milp.addVar(vtype=GRB.BINARY, name=f'ok({i},{j},{t})')
+            milp.addConstr(ivar[a, t] >= svar[a, t] - svar[a, t - 1], name=f'epbb_start({i},{j},{t})')
+            milp.addConstr(stopvar[a, t] >= svar[a, t - 1] - svar[a, t], name=f'epbb_stop({i},{j},{t})')
+            start_terms.append(ivar[a, t])
+            stop_terms.append(stopvar[a, t])
+        milp.addConstr(gp.quicksum(start_terms) <= activation_config.na_max, name=f'epbb_start_budget({i},{j})')
+        milp.addConstr(gp.quicksum(stop_terms) <= activation_config.na_max, name=f'epbb_stop_budget({i},{j})')

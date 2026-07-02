@@ -22,19 +22,34 @@
       "case_id": "atm-24h-na1",
       "na_max": 1,
       "gops_base_instance_key": "ATM e 24 1",
-      "na_max_implementation_status": "pending michaelsouza/gopslpnlpbb#15"
+      "activation_semantics": "epanet-bb-operative-separate-start-stop-budgets-v1",
+      "activation_budget": {
+        "starts_per_pump": 1,
+        "stops_per_pump": 1,
+        "initial_transition": "h0_to_h1_unmetered"
+      }
     },
     {
       "case_id": "atm-24h-na2",
       "na_max": 2,
       "gops_base_instance_key": "ATM e 24 1",
-      "na_max_implementation_status": "pending michaelsouza/gopslpnlpbb#15"
+      "activation_semantics": "epanet-bb-operative-separate-start-stop-budgets-v1",
+      "activation_budget": {
+        "starts_per_pump": 2,
+        "stops_per_pump": 2,
+        "initial_transition": "h0_to_h1_unmetered"
+      }
     },
     {
       "case_id": "atm-24h-na3",
       "na_max": 3,
       "gops_base_instance_key": "ATM e 24 1",
-      "na_max_implementation_status": "pending michaelsouza/gopslpnlpbb#15"
+      "activation_semantics": "epanet-bb-operative-separate-start-stop-budgets-v1",
+      "activation_budget": {
+        "starts_per_pump": 3,
+        "stops_per_pump": 3,
+        "initial_transition": "h0_to_h1_unmetered"
+      }
     }
   ],
   "representation_decisions": {
@@ -173,6 +188,7 @@
   "validation": {
     "tool": "tools/validate_epanet_bb_gops_case.py",
     "constructs_instance_without_gurobi": true,
-    "checks_against": "docs/epanet-bb-source-of-truth-cases.json"
+    "checks_against": "docs/epanet-bb-source-of-truth-cases.json",
+    "activation_semantics_checked_by": "src/activation.py"
   }
 }

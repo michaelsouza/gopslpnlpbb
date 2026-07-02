@@ -11,6 +11,13 @@ from pathlib import Path
 from typing import Any
 
 
+SRC = Path(__file__).resolve().parents[1] / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
+
+from activation import EPANET_BB_OPERATIVE_SEMANTICS
+
+
 PUMP_ARCS = [("R111", "J20"), ("R222", "J20"), ("R333", "J20")]
 CASE_TO_NA_MAX = {
     "atm-24h-na1": 1,
@@ -71,7 +78,10 @@ def validate_cases(translation: dict[str, Any]) -> None:
     assert seen == CASE_TO_NA_MAX
     for case in cases:
         assert case["gops_base_instance_key"] == "ATM e 24 1"
-        assert "pending michaelsouza/gopslpnlpbb#15" == case["na_max_implementation_status"]
+        assert case["activation_semantics"] == EPANET_BB_OPERATIVE_SEMANTICS
+        assert case["activation_budget"]["starts_per_pump"] == case["na_max"]
+        assert case["activation_budget"]["stops_per_pump"] == case["na_max"]
+        assert case["activation_budget"]["initial_transition"] == "h0_to_h1_unmetered"
 
 
 def validate_instance_shape(inst: Any, source: dict[str, Any]) -> None:

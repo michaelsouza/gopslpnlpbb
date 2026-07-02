@@ -23,7 +23,8 @@ ATM e 24 1
 `ATM` selects the new `data/EpanetBB_Anytown` dataset, `e` selects the
 EPANET-BB 1-hour profile, `24` selects a 24-hour horizon, and the final token
 remains the GOPS day selector. It is not an `NA_max` selector; `NA_max = 1, 2,
-3` handling belongs to issue #15.
+3` handling is selected by first-class EPANET-BB-equivalent case ids rather
+than by this legacy GOPS instance key.
 
 ## Runnable GOPS Inputs
 
@@ -167,13 +168,29 @@ metadata.
 ## First-Class Cases
 
 The three first-class EPANET-BB-equivalent GOPS cases share the translated
-base instance and differ only by the `NA_max` value that issue #15 will attach:
+base instance and differ by their explicit `NA_max` activation budget:
 
 | Case id | `NA_max` | GOPS base instance |
 | --- | ---: | --- |
 | `atm-24h-na1` | 1 | `ATM e 24 1` |
 | `atm-24h-na2` | 2 | `ATM e 24 1` |
 | `atm-24h-na3` | 3 | `ATM e 24 1` |
+
+`src/activation.py` resolves these case ids and labels them as
+`epanet-bb-operative-separate-start-stop-budgets-v1`. That adapted path is
+separate from the original Bonvin/GOPS public-artifact start-limit semantics,
+which remain labeled as `bonvin-gops-hardcoded-symmetric-start-limit-v1`.
+
+For the adapted EPANET-BB-equivalent cases:
+
+- Starts and stops are budgeted separately per pump.
+- Each per-pump start and stop budget equals the case `NA_max`.
+- The explicit hour-0 all-off initialization is retained.
+- The hour-0 to hour-1 transition is represented in schedules but is not
+  charged to either budget.
+- The adapted model path does not apply the public GOPS symmetric-pump ordering
+  constraint; EPANET-BB pump identities remain independent for activation
+  accounting.
 
 No schedule is inferred or imported from EPANET-BB paper costs or aggregate
 statistics. The published EPANET-BB schedules remain comparison artifacts, not
@@ -185,6 +202,7 @@ GOPS schedules.
 
 - The three case ids and `NA_max` values are present.
 - The translated `Instance` constructs with 24 one-hour periods.
+- The three case ids carry explicit `NA_max` activation semantics and budgets.
 - Demand and tariff profiles match the EPANET-BB source-of-truth values.
 - Every junction base demand matches the source demand after `CMH -> L/s`
   conversion.
@@ -199,4 +217,4 @@ GOPS schedules.
 - The translated dataset has 41 pipe rows, 3 pump rows, 3 tanks, and no valves.
 
 This is a construction and validation slice. It intentionally does not solve a
-Gurobi model and does not implement `NA_max`; those are later issues.
+Gurobi model; final solver execution is a later issue.

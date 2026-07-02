@@ -19,6 +19,7 @@ import graphic
 from hydraulics import HydraulicNetwork
 from pathlib import Path
 from stats import Stat
+from activation import resolve_epanet_bb_case
 
 EPSILON = 1e-2
 MIPGAP = 1e-6
@@ -69,7 +70,7 @@ OUTDIR = Path("../output/")
 
 
 # possible modes are: None, 'CVX' (solve MIP relaxation), 'SOLVE' (run adjustemnt heur), 'CUT' (cut with adjustment heur),
-def solve(instance, epsilon, mipgap, mode, drawsolution, stat=None, pumpvals=None):
+def solve(instance, epsilon, mipgap, mode, drawsolution, stat=None, pumpvals=None, activation_config=None):
     print('***********************************************')
     print(instance.tostr_basic())
     print(instance.tostr_network())
@@ -81,7 +82,7 @@ def solve(instance, epsilon, mipgap, mode, drawsolution, stat=None, pumpvals=Non
         print(f'obbt bounds not read: {err}')
 
     print("create model")
-    cvxmodel = rel.build_model(instance, epsilon, pumpvals=pumpvals)
+    cvxmodel = rel.build_model(instance, epsilon, pumpvals=pumpvals, activation_config=activation_config)
     # cvxmodel.write('convrel.lp')
     cvxmodel.params.MIPGap = mipgap
     cvxmodel.params.timeLimit = 3600
@@ -127,6 +128,12 @@ def solvebench(bench, epsilon=EPSILON, mipgap=MIPGAP, mode='CUT', drawsolution=F
 def solveinstance(instid, epsilon=EPSILON, mipgap=MIPGAP, mode='CUT', drawsolution=True):
     instance = makeinstance(instid)
     solve(instance, epsilon, mipgap, mode, drawsolution)
+
+
+def solve_epanet_bb_case(case_id, epsilon=EPSILON, mipgap=MIPGAP, mode='CUT', drawsolution=True):
+    case = resolve_epanet_bb_case(case_id)
+    instance = makeinstance(case.gops_base_instance_key)
+    return solve(instance, epsilon, mipgap, mode, drawsolution, activation_config=case.activation_config())
 
 
 def testsolution(instid, solfilename, epsilon=EPSILON, mipgap=MIPGAP, mode='CVX', drawsolution=True):
