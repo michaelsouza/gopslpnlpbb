@@ -425,6 +425,8 @@ class Instance:
             return [('R1', 'J2'), ('R2', 'J2'), ('R3', 'J2')]
         elif self.name == 'Anytown':
             return [('R1', 'J20'), ('R2', 'J20'), ('R3', 'J20')]
+        elif self.name == 'EpanetBB_Anytown':
+            return [('R111', 'J20'), ('R222', 'J20'), ('R333', 'J20')]
         elif self.name == 'Richmond':
             return [('196', '768'), ('209', '766')]
         elif self.name == 'SAUR':

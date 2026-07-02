@@ -27,9 +27,17 @@ BENCH = {
     'FSD': {'ntk': 'Simple_Network', 'D0': 1, 'H0': '/01/2013 00:00'},
     'RIC': {'ntk': 'Richmond', 'D0': 21, 'H0': '/05/2013 07:00'},
     'ANY': {'ntk': 'Anytown', 'D0': 1, 'H0': '/01/2013 00:00'},
+    'ATM': {'ntk': 'EpanetBB_Anytown', 'D0': 1, 'H0': '/01/2013 00:00'},
 }
-PROFILE = {'s': 'Profile_5d_30m_smooth', 'n': 'Profile_5d_30m_smooth'}
+PROFILE = {
+    's': 'Profile_5d_30m_smooth',
+    'n': 'Profile_5d_30m_smooth',
+    'e': 'Profile_epanet_bb_1d_1h',
+}
 STEPLENGTH = {'12': 4, '24': 2, '48': 1}
+PROFILE_STEPLENGTH = {
+    'e': {'24': 1},
+}
 
 
 # ex of instance id: "FSD s 24 3"
@@ -39,7 +47,8 @@ def makeinstance(instid: str):
     d = BENCH[a[0]]
     dbeg = f"{(d['D0'] + int(a[3]) - 1):02d}" + d['H0']
     dend = f"{(d['D0'] + int(a[3])):02d}" + d['H0']
-    return Instance(d['ntk'], PROFILE[a[1]], dbeg, dend, STEPLENGTH[a[2]])
+    steplength = PROFILE_STEPLENGTH.get(a[1], STEPLENGTH)[a[2]]
+    return Instance(d['ntk'], PROFILE[a[1]], dbeg, dend, steplength)
 
 
 FASTBENCH = [
@@ -137,7 +146,8 @@ def testsolution(instid, solfilename, epsilon=EPSILON, mipgap=MIPGAP, mode='CVX'
     solve(instance, epsilon, mipgap, mode, drawsolution=drawsolution, pumpvals=arcvals)
 
 
-# solveinstance('FSD s 24 1', mode='')
-# solveinstance('RIC s 12 3', mode='CUT')
-# testsolution('RIC s 12 1', "sol.csv")
-solvebench(FASTBENCH[:7], mode='')
+if __name__ == "__main__":
+    # solveinstance('FSD s 24 1', mode='')
+    # solveinstance('RIC s 12 3', mode='CUT')
+    # testsolution('RIC s 12 1', "sol.csv")
+    solvebench(FASTBENCH[:7], mode='')

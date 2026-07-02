@@ -1,0 +1,143 @@
+{
+  "schema_version": 1,
+  "implemented_for": "michaelsouza/gopslpnlpbb#14",
+  "track": "epanet-bb-equivalent-gops",
+  "contract_version": "epanet-bb-equivalent-gops-v1",
+  "source_of_truth": "docs/epanet-bb-source-of-truth-cases.json",
+  "translated_dataset": {
+    "instance_name": "EpanetBB_Anytown",
+    "data_directory": "data/EpanetBB_Anytown",
+    "gops_benchmark_key": "ATM",
+    "gops_profile_key": "e",
+    "gops_profile_name": "Profile_epanet_bb_1d_1h",
+    "gops_base_instance_key": "ATM e 24 1",
+    "start_time": "01/01/2013 00:00",
+    "end_time": "02/01/2013 00:00",
+    "aggregate_steps": 1,
+    "horizon_periods": 24,
+    "period_duration_hours": 1
+  },
+  "first_class_cases": [
+    {
+      "case_id": "atm-24h-na1",
+      "na_max": 1,
+      "gops_base_instance_key": "ATM e 24 1",
+      "na_max_implementation_status": "pending michaelsouza/gopslpnlpbb#15"
+    },
+    {
+      "case_id": "atm-24h-na2",
+      "na_max": 2,
+      "gops_base_instance_key": "ATM e 24 1",
+      "na_max_implementation_status": "pending michaelsouza/gopslpnlpbb#15"
+    },
+    {
+      "case_id": "atm-24h-na3",
+      "na_max": 3,
+      "gops_base_instance_key": "ATM e 24 1",
+      "na_max_implementation_status": "pending michaelsouza/gopslpnlpbb#15"
+    }
+  ],
+  "representation_decisions": {
+    "demand": {
+      "source_units": "CMH",
+      "gops_units": "L/s",
+      "conversion": "source_base_demand / 3.6",
+      "profiles": [
+        "DEM",
+        "DEM55",
+        "DEM90",
+        "DEM170"
+      ],
+      "profile_values_match_source_of_truth": true
+    },
+    "tariff": {
+      "pattern_id": "PRICES",
+      "gops_column": "elix",
+      "values_match_source_of_truth": true
+    },
+    "tanks": {
+      "source_tank_ids": [
+        "65",
+        "165",
+        "265"
+      ],
+      "gops_tank_ids": [
+        "T65",
+        "T165",
+        "T265"
+      ],
+      "surface_formula": "pi * (21.55 / 2)^2",
+      "min_level_m": 66.53,
+      "initial_level_m": 66.93,
+      "max_level_m": 71.53,
+      "all_three_tanks_explicit": true
+    },
+    "source": {
+      "source_epanet_node": "10",
+      "source_head": 3.048,
+      "gops_source_rows": [
+        "R111",
+        "R222",
+        "R333"
+      ],
+      "reason": "GOPS Instance keys pumps by (start, end), so one source row per pump avoids endpoint-key collisions while preserving the common source head."
+    },
+    "pumps": {
+      "gops_arcs_are_distinct": true,
+      "symmetric_group": [
+        [
+          "R111",
+          "J20"
+        ],
+        [
+          "R222",
+          "J20"
+        ],
+        [
+          "R333",
+          "J20"
+        ]
+      ],
+      "mapping": [
+        {
+          "gops_arc": [
+            "R111",
+            "J20"
+          ],
+          "gops_pump_id": "111",
+          "epanet_pump_id": "111",
+          "best_x_column": 0
+        },
+        {
+          "gops_arc": [
+            "R222",
+            "J20"
+          ],
+          "gops_pump_id": "222",
+          "epanet_pump_id": "222",
+          "best_x_column": 1
+        },
+        {
+          "gops_arc": [
+            "R333",
+            "J20"
+          ],
+          "gops_pump_id": "333",
+          "epanet_pump_id": "333",
+          "best_x_column": 2
+        }
+      ]
+    },
+    "pipes": {
+      "row_count": 41,
+      "coefficients": "public GOPS Anytown polynomial pipe coefficients",
+      "topology_adjustment": "pipe T178 is J140 -> T265 to match the EPANET-BB tank set",
+      "representation_note": "Hydraulic equivalence of GOPS polynomial coefficients to the EPANET-BB INP remains a recorded modeling assumption for solver/audit runs."
+    }
+  },
+  "validation": {
+    "tool": "tools/validate_epanet_bb_gops_case.py",
+    "constructs_instance_without_gurobi": true,
+    "checks_against": "docs/epanet-bb-source-of-truth-cases.json"
+  }
+}
