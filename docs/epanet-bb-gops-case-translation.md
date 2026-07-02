@@ -124,6 +124,32 @@ The deterministic pump mapping is:
 | `R222 -> J20` | `222` | `222` | 1 |
 | `R333 -> J20` | `333` | `333` | 2 |
 
+The pump physics are a recorded GOPS-model approximation. The translated pump
+rows copy the public GOPS `data/Anytown/Pump.csv` fixed-speed polynomial
+coefficients while replacing only pump ids and source arcs. This slice does not
+fit new GOPS polynomial coefficients from the EPANET-BB head curve `1` or
+efficiency curve `2`; later solver/audit runs should carry this representation
+assumption in run metadata before comparing against EPANET-BB hydraulic checks.
+
+The shared pump coefficients are:
+
+| GOPS CSV column | Value |
+| --- | ---: |
+| `PressureA` | `-0.0001430090671917451` |
+| `PressureB` | `0.0` |
+| `PressureC` | `91.26783277727577` |
+| `PowerA` | `1.22640426` |
+| `PowerB` | `35.63134164` |
+| `Qmin` | `0` |
+| `QMAX` | `1000` |
+| `GAP MAX` | `1000` |
+| `GAP MIN` | `1` |
+| `PUMP TYPE` | `FSD` |
+
+`src/instance.py` parses those as pump head-gain polynomial
+`[91.26783277727577, 0.0, -0.0001430090671917451]` and power polynomial
+`[35.63134164, 1.22640426]`.
+
 `src/instance.py` marks these three arcs as symmetric for
 `EpanetBB_Anytown`.
 
@@ -168,6 +194,8 @@ GOPS schedules.
   EPANET-BB source head.
 - Pump arcs, pump ids, `best_x` columns, and symmetry metadata are
   deterministic.
+- Pump polynomial coefficients match the recorded GOPS representation
+  assumption.
 - The translated dataset has 41 pipe rows, 3 pump rows, 3 tanks, and no valves.
 
 This is a construction and validation slice. It intentionally does not solve a

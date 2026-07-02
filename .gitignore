@@ -1,4 +1,5 @@
 res*.csv
+!data/EpanetBB_Anytown/Reservoir.csv
 testbound/
 
 .idea

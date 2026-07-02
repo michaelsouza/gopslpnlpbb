@@ -123,15 +123,39 @@ def validate_sources(inst: Any, source: dict[str, Any]) -> None:
         assert reservoir.heads == [expected_head] * 24
 
 
-def validate_pumps(inst: Any, translation: dict[str, Any]) -> None:
+def validate_pumps(inst: Any, translation: dict[str, Any], source: dict[str, Any]) -> None:
     decisions = translation["representation_decisions"]["pumps"]
     expected_arcs = [tuple(item["gops_arc"]) for item in decisions["mapping"]]
     assert expected_arcs == PUMP_ARCS
     assert list(inst.pumps) == PUMP_ARCS
+
+    coefficients = decisions["gops_polynomial_coefficients"]
+    assert coefficients["source"] == "public GOPS data/Anytown/Pump.csv"
+    assert coefficients["epanet_head_curve_id"] == "1"
+    assert coefficients["epanet_efficiency_curve_id"] == "2"
+
+    for source_pump in source["pumps"]:
+        assert source_pump["pump_curve_id"] == coefficients["epanet_head_curve_id"]
+        assert source_pump["efficiency_curve_id"] == coefficients["epanet_efficiency_curve_id"]
+
+    expected_csv = coefficients["csv_columns"]
+    expected_hgain = coefficients["instance_polynomials"]["hgain"]
+    expected_power = coefficients["instance_polynomials"]["power"]
+
     for item in decisions["mapping"]:
         arc = tuple(item["gops_arc"])
         pump = inst.pumps[arc]
         assert pump.id == item["gops_pump_id"]
+        assert_close(pump.hgain[0], expected_hgain[0], f"pump {pump.id} hgain constant")
+        assert_close(pump.hgain[1], expected_hgain[1], f"pump {pump.id} hgain linear")
+        assert_close(pump.hgain[2], expected_hgain[2], f"pump {pump.id} hgain quadratic")
+        assert_close(pump.power[0], expected_power[0], f"pump {pump.id} power constant")
+        assert_close(pump.power[1], expected_power[1], f"pump {pump.id} power linear")
+        assert_close(pump.qmin, expected_csv["Qmin"], f"pump {pump.id} qmin")
+        assert_close(pump.qmax, expected_csv["QMAX"], f"pump {pump.id} qmax")
+        assert_close(pump.offdhmin, expected_csv["GAP MIN"], f"pump {pump.id} offdhmin")
+        assert_close(pump.offdhmax, expected_csv["GAP MAX"], f"pump {pump.id} offdhmax")
+        assert pump.type == expected_csv["PUMP TYPE"]
 
 
 def validate(repo: Path, source_path: Path, translation_path: Path) -> None:
@@ -147,7 +171,7 @@ def validate(repo: Path, source_path: Path, translation_path: Path) -> None:
     validate_junction_demands(inst, source)
     validate_tanks(inst, source)
     validate_sources(inst, source)
-    validate_pumps(inst, translation)
+    validate_pumps(inst, translation, source)
 
 
 def main() -> None:

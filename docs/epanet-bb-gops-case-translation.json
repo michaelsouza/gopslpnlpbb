@@ -126,7 +126,42 @@
           "epanet_pump_id": "333",
           "best_x_column": 2
         }
-      ]
+      ],
+      "gops_polynomial_coefficients": {
+        "source": "public GOPS data/Anytown/Pump.csv",
+        "source_rows": [
+          "1A",
+          "2A",
+          "3A"
+        ],
+        "source_rows_are_identical": true,
+        "epanet_head_curve_id": "1",
+        "epanet_efficiency_curve_id": "2",
+        "derivation_status": "copied public GOPS fixed-speed polynomial coefficients; not fitted in this slice from EPANET-BB head curve 1 or efficiency curve 2",
+        "csv_columns": {
+          "PressureA": -0.0001430090671917451,
+          "PressureB": 0.0,
+          "PressureC": 91.26783277727577,
+          "PowerA": 1.22640426,
+          "PowerB": 35.63134164,
+          "Qmin": 0,
+          "QMAX": 1000,
+          "GAP MAX": 1000,
+          "GAP MIN": 1,
+          "PUMP TYPE": "FSD"
+        },
+        "instance_polynomials": {
+          "hgain": [
+            91.26783277727577,
+            0.0,
+            -0.0001430090671917451
+          ],
+          "power": [
+            35.63134164,
+            1.22640426
+          ]
+        }
+      }
     },
     "pipes": {
       "row_count": 41,
