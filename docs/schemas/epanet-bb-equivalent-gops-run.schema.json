@@ -341,6 +341,7 @@
             "infeasible",
             "license_blocked",
             "environment_blocked",
+            "environment_ready",
             "solver_error",
             "validation_failed",
             "audit_failed"
