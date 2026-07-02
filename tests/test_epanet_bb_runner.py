@@ -3,9 +3,12 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import run_epanet_bb_gops_experiment as runner
 from run_epanet_bb_gops_experiment import (
     CONTRACT_VERSION,
     TRACK,
+    _lpnlpbb_schedule_candidate,
+    _make_schedule_artifact,
     classify_exception,
     make_case_metadata,
     make_output_paths,
@@ -15,11 +18,47 @@ from run_epanet_bb_gops_experiment import (
 )
 
 
+class FakePump:
+    def __init__(self, pump_id: str) -> None:
+        self.id = pump_id
+
+
+class FakeInstance:
+    pumps = {
+        ("R111", "J20"): FakePump("111"),
+        ("R222", "J20"): FakePump("222"),
+        ("R333", "J20"): FakePump("333"),
+    }
+
+    def horizon(self) -> range:
+        return range(24)
+
+
+class DisposableModel:
+    def __init__(self) -> None:
+        self.disposed = False
+
+    def dispose(self) -> None:
+        self.disposed = True
+
+
+def one_pump_on_plan() -> dict[int, dict[tuple[str, str], int]]:
+    return {
+        period: {
+            ("R111", "J20"): 1,
+            ("R222", "J20"): 0,
+            ("R333", "J20"): 0,
+        }
+        for period in range(24)
+    }
+
+
 def test_runner_output_paths_are_namespaced_by_case_and_run_id() -> None:
     paths = make_output_paths("atm-24h-na2", "unit-run")
 
     assert paths.root == Path("output/epanet_bb_equivalent_gops/atm-24h-na2/unit-run")
     assert paths.run_manifest == paths.root / "run.json"
+    assert paths.schedule_json == paths.root / "schedule.json"
     assert paths.solver_log == paths.root / "solver.log"
 
 
@@ -58,7 +97,176 @@ def test_environment_blocked_manifest_is_contract_shaped(tmp_path: Path) -> None
     assert manifest["environment"]["host_name"] == "not-labma-sol"
     assert manifest["status"]["run_status"] == "environment_blocked"
     assert manifest["outputs"]["root"] == "output/epanet_bb_equivalent_gops/atm-24h-na1/blocked-run"
+    assert manifest["outputs"]["schedule_json"] is None
     json.dumps(manifest)
+
+
+def test_manifest_records_schedule_path_only_when_schedule_is_written(tmp_path: Path) -> None:
+    paths = make_output_paths("atm-24h-na1", "scheduled-run")
+    manifest = make_run_manifest(
+        case_id="atm-24h-na1",
+        run_class="dev",
+        command=["runner", "atm-24h-na1"],
+        paths=paths,
+        host_name="local-dev-host",
+        working_directory=tmp_path,
+        runtime_settings={"time_limit_seconds": 1.0, "mip_gap": 1e-6, "mode": "lpnlpbb"},
+        status={
+            "run_status": "success",
+            "schedule_availability": "complete_commanded_schedule",
+        },
+        solver={"name": "Gurobi", "license_status": "valid"},
+        schedule_written=True,
+    )
+
+    assert manifest["outputs"]["schedule_json"] == "output/epanet_bb_equivalent_gops/atm-24h-na1/scheduled-run/schedule.json"
+
+
+def test_schedule_artifact_exports_epanet_bb_best_y_and_best_x() -> None:
+    args = parse_args(["atm-24h-na1", "--execution-mode", "lpnlpbb"])
+    artifact = _make_schedule_artifact(
+        args,
+        FakeInstance(),
+        one_pump_on_plan(),
+        source={"kind": "unit-test", "adjusted": False},
+        cost=123.45,
+        duration=6.7,
+    )
+
+    assert artifact["case_id"] == "atm-24h-na1"
+    assert artifact["na_max"] == 1
+    assert artifact["method_name"] == "GOPS LP-NLP branch-and-bound"
+    assert artifact["best_y"] == [0, *([1] * 24)]
+    assert len(artifact["best_x"]) == 75
+    assert artifact["best_x"][:6] == [0, 0, 0, 1, 0, 0]
+    assert artifact["pump_schedules_h1_to_h24"] == {
+        "111": "1" * 24,
+        "222": "0" * 24,
+        "333": "0" * 24,
+    }
+    assert artifact["pump_mapping"]["best_x_order"] == ["111", "222", "333"]
+    assert artifact["best_cost"] == 123.45
+    assert artifact["duration_seconds"] == 6.7
+
+
+def test_adjusted_only_lpnlpbb_solution_is_not_promoted_to_schedule() -> None:
+    args = parse_args(["atm-24h-na1", "--execution-mode", "lpnlpbb"])
+    model = type(
+        "FakeModel",
+        (),
+        {
+            "_solutions": [
+                {
+                    "plan": one_pump_on_plan(),
+                    "cost": 123.45,
+                    "cpu": 6.7,
+                    "adjusted": True,
+                    "flows": None,
+                    "volumes": None,
+                }
+            ]
+        },
+    )()
+
+    candidate = _lpnlpbb_schedule_candidate(args, FakeInstance(), model)
+
+    assert candidate.schedule_availability == "adjusted_only"
+    assert candidate.artifact is None
+
+
+def test_empty_lpnlpbb_solution_list_reports_no_schedule() -> None:
+    args = parse_args(["atm-24h-na1", "--execution-mode", "lpnlpbb"])
+    model = type("FakeModel", (), {"_solutions": []})()
+
+    candidate = _lpnlpbb_schedule_candidate(args, FakeInstance(), model)
+
+    assert candidate.schedule_availability == "none"
+    assert candidate.artifact is None
+
+
+def test_incomplete_lpnlpbb_solution_is_not_promoted_to_schedule() -> None:
+    args = parse_args(["atm-24h-na1", "--execution-mode", "lpnlpbb"])
+    incomplete = one_pump_on_plan()
+    del incomplete[23]
+    model = type(
+        "FakeModel",
+        (),
+        {
+            "_solutions": [
+                {
+                    "plan": incomplete,
+                    "cost": 123.45,
+                    "cpu": 6.7,
+                    "adjusted": False,
+                    "flows": {},
+                    "volumes": {},
+                }
+            ]
+        },
+    )()
+
+    candidate = _lpnlpbb_schedule_candidate(args, FakeInstance(), model)
+
+    assert candidate.schedule_availability == "incomplete"
+    assert candidate.artifact is None
+
+
+def test_run_writes_schedule_artifact_and_manifest_path(tmp_path: Path, monkeypatch) -> None:
+    model = DisposableModel()
+
+    def fake_build_model(args):
+        return (
+            object(),
+            FakeInstance(),
+            model,
+            {"name": "Gurobi", "license_status": "valid"},
+            {"variables": 1, "constraints": 1},
+        )
+
+    def fake_run_solver(args, gp, instance, model):
+        return (
+            {
+                "run_status": "success",
+                "schedule_availability": "complete_commanded_schedule",
+                "detail": "unit-test schedule",
+            },
+            {
+                "contract_version": CONTRACT_VERSION,
+                "track": TRACK,
+                "case_id": args.case_id,
+                "na_max": 1,
+                "best_y": [0, *([1] * 24)],
+                "best_x": [0, 0, 0, *([1, 0, 0] * 24)],
+            },
+        )
+
+    monkeypatch.setattr(runner, "_build_model", fake_build_model)
+    monkeypatch.setattr(runner, "_run_solver", fake_run_solver)
+    args = parse_args(
+        [
+            "atm-24h-na1",
+            "--run-class",
+            "dev",
+            "--run-id",
+            "scheduled-run",
+            "--execution-mode",
+            "lpnlpbb",
+            "--output-root",
+            str(tmp_path / "output"),
+        ]
+    )
+
+    exit_code = run(args, ["runner", "atm-24h-na1"])
+
+    run_manifest = tmp_path / "output" / "atm-24h-na1" / "scheduled-run" / "run.json"
+    schedule_json = tmp_path / "output" / "atm-24h-na1" / "scheduled-run" / "schedule.json"
+    manifest = json.loads(run_manifest.read_text())
+    schedule = json.loads(schedule_json.read_text())
+
+    assert exit_code == 0
+    assert model.disposed is True
+    assert manifest["outputs"]["schedule_json"].endswith("atm-24h-na1/scheduled-run/schedule.json")
+    assert schedule["best_y"] == [0, *([1] * 24)]
 
 
 def test_classify_license_exception() -> None:
