@@ -10,3 +10,9 @@ checks with:
 python -m pip install -r requirements-dev.txt
 python -m pytest
 ```
+
+Install the GOPS/Gurobi runner dependencies with:
+
+```bash
+python -m pip install -r requirements-runtime.txt
+```
