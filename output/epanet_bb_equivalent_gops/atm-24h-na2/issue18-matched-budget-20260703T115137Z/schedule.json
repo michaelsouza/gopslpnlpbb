@@ -1,0 +1,227 @@
+{
+  "artifact_type": "epanet-bb-compatible-commanded-pump-schedule",
+  "benchmark_identity": {
+    "family": "AnyTown Modified",
+    "source_of_truth": "docs/epanet-bb-source-of-truth-cases.json",
+    "target": "EPANET-BB paper case"
+  },
+  "best_cost": 455.144256001663,
+  "best_x": [
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    1,
+    1,
+    0,
+    0,
+    1,
+    0,
+    0,
+    1,
+    0,
+    0,
+    1,
+    0,
+    0,
+    1,
+    0,
+    0,
+    1,
+    0,
+    0,
+    1,
+    0,
+    0,
+    1,
+    0,
+    0,
+    1,
+    0,
+    1,
+    1,
+    0,
+    1,
+    1,
+    0,
+    1,
+    1,
+    0,
+    0,
+    1,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    1,
+    0,
+    0,
+    1,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    1,
+    0,
+    0
+  ],
+  "best_y": [
+    0,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    1,
+    1,
+    1
+  ],
+  "case_id": "atm-24h-na2",
+  "contract_version": "epanet-bb-equivalent-gops-v1",
+  "conversion": {
+    "best_x": "best_x starts with explicit h=0 all-off states, then appends GOPS periods t=0..23 as EPANET-BB hours h=1..24 flattened by pump order 111,222,333.",
+    "best_y": "best_y[h] is the aggregate commanded pump count for the corresponding best_x hour.",
+    "policy": "Only complete non-adjusted fixed-period commanded schedules are audit-compatible.",
+    "source": "GOPS commanded binary activity variables xk/gurobi _svar by pump arc and period"
+  },
+  "duration_seconds": 392.9275050163269,
+  "gops_method": {
+    "adjust_mode": "plain",
+    "execution_mode": "lpnlpbb"
+  },
+  "h_max": 24,
+  "horizon": {
+    "explicit_initial_slot": true,
+    "gops_period_t0_maps_to_epanet_hour": 1,
+    "h_max": 24,
+    "period_duration_hours": 1,
+    "periods": 24
+  },
+  "inp_file": "networks/any-town.inp",
+  "max_actuations": 2,
+  "method": "GOPS LP-NLP branch-and-bound",
+  "method_name": "GOPS LP-NLP branch-and-bound",
+  "na_max": 2,
+  "operative_transition_counts": [
+    {
+      "pump": "111",
+      "starts_excluding_initial": 2,
+      "starts_including_initial": 3,
+      "stops_excluding_initial": 2,
+      "stops_including_initial": 2
+    },
+    {
+      "pump": "222",
+      "starts_excluding_initial": 2,
+      "starts_including_initial": 2,
+      "stops_excluding_initial": 2,
+      "stops_including_initial": 2
+    },
+    {
+      "pump": "333",
+      "starts_excluding_initial": 2,
+      "starts_including_initial": 2,
+      "stops_excluding_initial": 2,
+      "stops_including_initial": 2
+    }
+  ],
+  "pump_mapping": {
+    "best_x_order": [
+      "111",
+      "222",
+      "333"
+    ],
+    "gops_to_epanet": [
+      {
+        "best_x_column": 0,
+        "epanet_id": "111",
+        "gops_arc": [
+          "R111",
+          "J20"
+        ],
+        "gops_id": "111"
+      },
+      {
+        "best_x_column": 1,
+        "epanet_id": "222",
+        "gops_arc": [
+          "R222",
+          "J20"
+        ],
+        "gops_id": "222"
+      },
+      {
+        "best_x_column": 2,
+        "epanet_id": "333",
+        "gops_arc": [
+          "R333",
+          "J20"
+        ],
+        "gops_id": "333"
+      }
+    ]
+  },
+  "pump_schedules_h1_to_h24": {
+    "111": "100000000000000011110011",
+    "222": "001000000001110000000000",
+    "333": "011111111111111100000100"
+  },
+  "schedule_source": {
+    "adjusted": false,
+    "cost_source": "lpnlpbb_real_cost",
+    "duration_source": "gurobi_callback_runtime",
+    "kind": "lpnlpbb_model_solution",
+    "solution_index": 2
+  },
+  "solver_status": {
+    "gurobi_runtime_seconds": 501.6403670310974,
+    "gurobi_status": 9,
+    "gurobi_status_name": "TIME_LIMIT",
+    "mip_gap": 0.045471409125049364,
+    "objective_bound": 339.4903372923342,
+    "objective_value": 355.6628272193992,
+    "reported_real_cost": 455.144256001663,
+    "solution_count": 3,
+    "wall_time_seconds": 501.641
+  },
+  "status": {
+    "detail": "solver status TIME_LIMIT; complete fixed-period commanded pump schedule exported",
+    "run_status": "time_limit_with_schedule",
+    "schedule_availability": "complete_commanded_schedule"
+  },
+  "track": "epanet-bb-equivalent-gops"
+}

@@ -1,0 +1,53 @@
+
+Gurobi 13.0.2 (linux64) logging started Fri Jul  3 08:51:51 2026
+
+Set parameter LogFile to value "/home/michael/gitrepos/gopslpnlpbb/output/epanet_bb_equivalent_gops/atm-24h-na1/issue18-matched-budget-20260703T115137Z/solver.log"
+Set parameter LazyConstraints to value 1
+Gurobi Optimizer version 13.0.2 build v13.0.2rc1 (linux64 - "Debian GNU/Linux 13 (trixie)")
+
+CPU model: AMD EPYC 9554 64-Core Processor, instruction set [SSE2|AVX|AVX2|AVX512]
+Thread count: 64 physical cores, 128 logical processors, using up to 32 threads
+
+Non-default parameters:
+TimeLimit  5
+MIPGap  1e-06
+LazyConstraints  1
+
+Optimize a model with 206208 rows, 1872 columns and 623520 nonzeros (Min)
+Model fingerprint: 0x3f43d13c
+Model has 144 linear objective coefficients
+Variable types: 1659 continuous, 213 integer (213 binary)
+Coefficient statistics:
+  Matrix range     [9e-04, 1e+03]
+  Objective range  [2e-02, 3e+00]
+  Bounds range     [1e+00, 1e+03]
+  RHS range        [2e-01, 3e+04]
+
+Presolve removed 101262 rows and 174 columns
+Presolve time: 1.52s
+Presolved: 104946 rows, 1698 columns, 315890 nonzeros
+Variable types: 1485 continuous, 213 integer (213 binary)
+Root relaxation presolved: 60103 rows, 46541 columns, 226215 nonzeros
+
+
+Root relaxation: objective 3.351307e+02, 3171 iterations, 0.61 seconds (1.31 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0  335.13072    0   38          -  335.13072      -     -    3s
+     0     0  335.14737    0   74          -  335.14737      -     -    4s
+
+Cutting planes:
+  Gomory: 2
+  MIR: 12
+
+Explored 1 nodes (4621 simplex iterations) in 5.00 seconds (10.43 work units)
+Thread count was 32 (of 128 available processors)
+
+Solution count 0
+
+Time limit reached
+Best objective -, best bound 3.351473651126e+02, gap -
+
+User-callback calls 1438, time in user-callback 0.00 sec
