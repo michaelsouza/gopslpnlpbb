@@ -28,6 +28,7 @@ class OutputPaths:
     root: Path
     run_manifest: Path
     schedule_json: Path
+    audit_json: Path
     solver_log: Path
 
 
@@ -99,6 +100,7 @@ def make_output_paths(
         root=root,
         run_manifest=root / "run.json",
         schedule_json=root / "schedule.json",
+        audit_json=root / "audit.json",
         solver_log=root / "solver.log",
     )
 
@@ -153,6 +155,7 @@ def make_run_manifest(
     model: dict[str, Any] | None = None,
     git_metadata: dict[str, Any] | None = None,
     schedule_written: bool = False,
+    audit_written: bool = False,
 ) -> dict[str, Any]:
     manifest = {
         "contract_version": CONTRACT_VERSION,
@@ -174,7 +177,7 @@ def make_run_manifest(
             "root": _repo_relative(ROOT / paths.root),
             "run_manifest": _repo_relative(ROOT / paths.run_manifest),
             "schedule_json": _repo_relative(ROOT / paths.schedule_json) if schedule_written else None,
-            "audit_json": None,
+            "audit_json": _repo_relative(ROOT / paths.audit_json) if audit_written else None,
             "solver_log": _repo_relative(ROOT / paths.solver_log),
         },
     }
@@ -376,8 +379,12 @@ def _make_schedule_artifact(
         "artifact_type": "epanet-bb-compatible-commanded-pump-schedule",
         "case_id": args.case_id,
         "na_max": case["na_max"],
+        "max_actuations": case["na_max"],
+        "h_max": 24,
+        "inp_file": "networks/any-town.inp",
         "method_name": _method_name(args),
-        "method": {
+        "method": _method_name(args),
+        "gops_method": {
             "execution_mode": args.execution_mode,
             "adjust_mode": args.adjust_mode,
         },
@@ -419,6 +426,56 @@ def _make_schedule_artifact(
     if duration_value is not None:
         artifact["duration_seconds"] = duration_value
     return artifact
+
+
+def _audit_schedule(args: argparse.Namespace, paths: OutputPaths) -> dict[str, Any]:
+    audit_binary = args.audit_binary
+    if not audit_binary.exists():
+        return {
+            "status": "failed",
+            "detail": f"EPANET-BB audit binary not found: {audit_binary}",
+            "command": [],
+        }
+
+    command = [
+        str(audit_binary),
+        str((ROOT / paths.schedule_json).resolve()),
+        str((ROOT / paths.audit_json).resolve()),
+        "--zero-flow-threshold",
+        f"{args.audit_zero_flow_threshold:g}",
+    ]
+    result = subprocess.run(command, cwd=audit_binary.parent.parent, text=True, capture_output=True, check=False)
+    audit_result: dict[str, Any] = {
+        "status": "succeeded" if result.returncode == 0 else "failed",
+        "returncode": result.returncode,
+        "command": command,
+        "stdout": result.stdout,
+        "stderr": result.stderr,
+        "zero_flow_threshold": args.audit_zero_flow_threshold,
+    }
+    if result.returncode != 0:
+        return audit_result
+
+    try:
+        payload = json.loads((ROOT / paths.audit_json).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        audit_result.update(
+            {
+                "status": "failed",
+                "detail": f"Audit command succeeded, but audit JSON could not be read: {exc}",
+            }
+        )
+        return audit_result
+
+    summary: dict[str, Any] = {}
+    if "feasibility" in payload:
+        summary["feasibility"] = payload["feasibility"]
+    if "effective_cost" in payload:
+        summary["effective_cost"] = payload["effective_cost"]
+    if "event_counts" in payload:
+        summary["event_counts"] = payload["event_counts"]
+    audit_result["summary"] = summary
+    return audit_result
 
 
 def _plan_from_model_values(model: Any, instance: Any) -> dict[int, dict[tuple[str, str], int]]:
@@ -756,6 +813,7 @@ def run(args: argparse.Namespace, command: list[str]) -> int:
     model_data = None
     schedule_artifact = None
     schedule_written = False
+    audit_written = False
     try:
         gp, instance, model, solver, model_data = _build_model(args)
         status, schedule_artifact = _run_solver(args, gp, instance, model)
@@ -780,6 +838,19 @@ def run(args: argparse.Namespace, command: list[str]) -> int:
             schedule_written = False
             exit_code = 1
 
+    should_audit = schedule_written and (args.audit_schedule or args.run_class == "final")
+    if should_audit:
+        audit_result = _audit_schedule(args, paths)
+        status["audit"] = audit_result
+        audit_written = audit_result["status"] == "succeeded" and (ROOT / paths.audit_json).exists()
+        if audit_result["status"] != "succeeded":
+            status = {
+                **status,
+                "run_status": "audit_failed",
+                "detail": f"{status.get('detail', '')}; EPANET-BB audit failed",
+            }
+            exit_code = 1
+
     manifest = make_run_manifest(
         case_id=args.case_id,
         run_class=args.run_class,
@@ -793,11 +864,14 @@ def run(args: argparse.Namespace, command: list[str]) -> int:
         model=model_data,
         git_metadata=git_metadata,
         schedule_written=schedule_written,
+        audit_written=audit_written,
     )
     _write_json(ROOT / paths.run_manifest, manifest)
     print(f"wrote {paths.run_manifest}")
     if schedule_written:
         print(f"wrote {paths.schedule_json}")
+    if audit_written:
+        print(f"wrote {paths.audit_json}")
     print(f"run status: {status['run_status']}")
     print(f"schedule availability: {status['schedule_availability']}")
     return exit_code
@@ -818,6 +892,17 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--threads", type=int, default=0)
     parser.add_argument("--require-bounds", action="store_true")
     parser.add_argument("--gurobi-output", action="store_true")
+    parser.add_argument(
+        "--audit-schedule",
+        action="store_true",
+        help="run the EPANET-BB fixed-schedule audit when a complete schedule is exported",
+    )
+    parser.add_argument(
+        "--audit-binary",
+        type=Path,
+        default=ROOT.parent / "epanet-bb" / "build" / "run-epanet3-bb-audit",
+    )
+    parser.add_argument("--audit-zero-flow-threshold", type=float, default=1e-6)
     args = parser.parse_args(argv)
     run_id = args.run_id or _utc_run_id()
     args.paths = make_output_paths(args.case_id, run_id, args.output_root)

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
+import textwrap
 
 import run_epanet_bb_gops_experiment as runner
 from run_epanet_bb_gops_experiment import (
@@ -59,6 +61,7 @@ def test_runner_output_paths_are_namespaced_by_case_and_run_id() -> None:
     assert paths.root == Path("output/epanet_bb_equivalent_gops/atm-24h-na2/unit-run")
     assert paths.run_manifest == paths.root / "run.json"
     assert paths.schedule_json == paths.root / "schedule.json"
+    assert paths.audit_json == paths.root / "audit.json"
     assert paths.solver_log == paths.root / "solver.log"
 
 
@@ -120,6 +123,7 @@ def test_manifest_records_schedule_path_only_when_schedule_is_written(tmp_path: 
     )
 
     assert manifest["outputs"]["schedule_json"] == "output/epanet_bb_equivalent_gops/atm-24h-na1/scheduled-run/schedule.json"
+    assert manifest["outputs"]["audit_json"] is None
 
 
 def test_schedule_artifact_exports_epanet_bb_best_y_and_best_x() -> None:
@@ -267,6 +271,99 @@ def test_run_writes_schedule_artifact_and_manifest_path(tmp_path: Path, monkeypa
     assert model.disposed is True
     assert manifest["outputs"]["schedule_json"].endswith("atm-24h-na1/scheduled-run/schedule.json")
     assert schedule["best_y"] == [0, *([1] * 24)]
+
+
+def test_final_run_audits_exported_schedule_and_records_audit_path(tmp_path: Path, monkeypatch) -> None:
+    model = DisposableModel()
+
+    def fake_build_model(args):
+        return (
+            object(),
+            FakeInstance(),
+            model,
+            {"name": "Gurobi", "license_status": "valid"},
+            {"variables": 1, "constraints": 1},
+        )
+
+    def fake_run_solver(args, gp, instance, model):
+        return (
+            {
+                "run_status": "success",
+                "schedule_availability": "complete_commanded_schedule",
+                "detail": "unit-test schedule",
+            },
+            {
+                "contract_version": CONTRACT_VERSION,
+                "track": TRACK,
+                "case_id": args.case_id,
+                "na_max": 1,
+                "method": "GOPS LP-NLP branch-and-bound",
+                "max_actuations": 1,
+                "h_max": 24,
+                "inp_file": "networks/any-town.inp",
+                "best_y": [0, *([1] * 24)],
+                "best_x": [0, 0, 0, *([1, 0, 0] * 24)],
+            },
+        )
+
+    fake_audit = tmp_path / "fake-audit"
+    fake_audit.write_text(
+        textwrap.dedent(
+            """\
+            #!/usr/bin/env python3
+            import json
+            import sys
+            from pathlib import Path
+
+            schedule = Path(sys.argv[1])
+            output = Path(sys.argv[2])
+            payload = json.loads(schedule.read_text())
+            output.write_text(json.dumps({
+                "schema_version": 1,
+                "metadata": {
+                    "schedule_file": str(schedule),
+                    "method": payload["method"],
+                    "actuation_limit": payload["max_actuations"]
+                },
+                "feasibility": {"feasible": True},
+                "effective_cost": 12.3,
+                "event_counts": {"tank_clamp_events": 0}
+            }))
+            """
+        )
+    )
+    os.chmod(fake_audit, 0o755)
+
+    monkeypatch.setattr(runner, "_build_model", fake_build_model)
+    monkeypatch.setattr(runner, "_run_solver", fake_run_solver)
+    args = parse_args(
+        [
+            "atm-24h-na1",
+            "--run-class",
+            "final",
+            "--host-name",
+            "labma-sol",
+            "--run-id",
+            "audited-run",
+            "--execution-mode",
+            "lpnlpbb",
+            "--output-root",
+            str(tmp_path / "output"),
+            "--audit-binary",
+            str(fake_audit),
+        ]
+    )
+
+    exit_code = run(args, ["runner", "atm-24h-na1"])
+
+    manifest = json.loads((tmp_path / "output" / "atm-24h-na1" / "audited-run" / "run.json").read_text())
+    audit = json.loads((tmp_path / "output" / "atm-24h-na1" / "audited-run" / "audit.json").read_text())
+
+    assert exit_code == 0
+    assert manifest["outputs"]["audit_json"].endswith("atm-24h-na1/audited-run/audit.json")
+    assert manifest["status"]["audit"]["status"] == "succeeded"
+    assert manifest["status"]["audit"]["summary"]["effective_cost"] == 12.3
+    assert audit["event_counts"]["tank_clamp_events"] == 0
 
 
 def test_classify_license_exception() -> None:
