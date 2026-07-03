@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import platform
 import subprocess
 import sys
@@ -249,6 +250,9 @@ def _solver_dict(gp: Any | None = None, license_status: str = "not_checked") -> 
         "name": "Gurobi",
         "license_status": license_status,
     }
+    license_file = os.environ.get("GRB_LICENSE_FILE")
+    if license_file:
+        solver["license_file"] = license_file
     if gp is not None:
         version = ".".join(str(part) for part in gp.gurobi.version())
         solver.update(
@@ -788,6 +792,9 @@ def _run_solver(args: argparse.Namespace, gp: Any, instance: Any, model: Any) ->
 
 def run(args: argparse.Namespace, command: list[str]) -> int:
     paths = args.paths
+    if args.gurobi_license_file is not None:
+        os.environ["GRB_LICENSE_FILE"] = str(args.gurobi_license_file)
+
     git_metadata = _git_metadata()
     (ROOT / paths.root).mkdir(parents=True, exist_ok=True)
     host_name = args.host_name or platform.node()
@@ -798,6 +805,7 @@ def run(args: argparse.Namespace, command: list[str]) -> int:
         "adjust_mode": args.adjust_mode,
         "epsilon": args.epsilon,
         "threads": args.threads or None,
+        "gurobi_license_file": os.environ.get("GRB_LICENSE_FILE"),
     }
 
     if args.run_class == "final" and host_name != "labma-sol":
@@ -907,6 +915,12 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--threads", type=int, default=0)
     parser.add_argument("--require-bounds", action="store_true")
     parser.add_argument("--gurobi-output", action="store_true")
+    parser.add_argument(
+        "--gurobi-license-file",
+        type=Path,
+        default=None,
+        help="explicit Gurobi license path to set via GRB_LICENSE_FILE before importing gurobipy",
+    )
     parser.add_argument(
         "--audit-schedule",
         action="store_true",

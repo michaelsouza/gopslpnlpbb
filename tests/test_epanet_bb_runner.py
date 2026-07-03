@@ -367,6 +367,53 @@ def test_final_run_audits_exported_schedule_and_records_audit_path(tmp_path: Pat
     assert audit["event_counts"]["tank_clamp_events"] == 0
 
 
+def test_run_sets_explicit_gurobi_license_file_before_model_build(tmp_path: Path, monkeypatch) -> None:
+    model = DisposableModel()
+    license_file = tmp_path / "academic-gurobi.lic"
+    license_file.write_text("placeholder\n", encoding="utf-8")
+    seen = {}
+
+    def fake_build_model(args):
+        seen["license_file"] = os.environ.get("GRB_LICENSE_FILE")
+        return (
+            object(),
+            FakeInstance(),
+            model,
+            {
+                "name": "Gurobi",
+                "license_status": "valid",
+                "license_file": os.environ.get("GRB_LICENSE_FILE"),
+            },
+            {"variables": 1, "constraints": 1},
+        )
+
+    monkeypatch.delenv("GRB_LICENSE_FILE", raising=False)
+    monkeypatch.setattr(runner, "_build_model", fake_build_model)
+    args = parse_args(
+        [
+            "atm-24h-na1",
+            "--run-class",
+            "dev",
+            "--run-id",
+            "explicit-license-run",
+            "--execution-mode",
+            "build",
+            "--output-root",
+            str(tmp_path / "output"),
+            "--gurobi-license-file",
+            str(license_file),
+        ]
+    )
+
+    exit_code = run(args, ["runner", "atm-24h-na1"])
+
+    manifest = json.loads((tmp_path / "output" / "atm-24h-na1" / "explicit-license-run" / "run.json").read_text())
+    assert exit_code == 0
+    assert seen["license_file"] == str(license_file)
+    assert manifest["runtime_settings"]["gurobi_license_file"] == str(license_file)
+    assert manifest["solver"]["license_file"] == str(license_file)
+
+
 def test_classify_license_exception() -> None:
     err = RuntimeError("No Gurobi license found")
     status = classify_exception(err)
