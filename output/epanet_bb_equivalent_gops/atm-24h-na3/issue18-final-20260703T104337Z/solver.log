@@ -1,0 +1,17 @@
+
+Gurobi 13.0.2 (linux64) logging started Fri Jul  3 07:43:52 2026
+
+Set parameter LogFile to value "/home/michael/gitrepos/gopslpnlpbb/output/epanet_bb_equivalent_gops/atm-24h-na3/issue18-final-20260703T104337Z/solver.log"
+Set parameter LazyConstraints to value 1
+Gurobi Optimizer version 13.0.2 build v13.0.2rc1 (linux64 - "Debian GNU/Linux 13 (trixie)")
+
+CPU model: AMD EPYC 9554 64-Core Processor, instruction set [SSE2|AVX|AVX2|AVX512]
+Thread count: 64 physical cores, 128 logical processors, using up to 32 threads
+
+Non-default parameters:
+TimeLimit  60
+MIPGap  1e-06
+LazyConstraints  1
+
+
+User-callback calls 11, time in user-callback 0.00 sec

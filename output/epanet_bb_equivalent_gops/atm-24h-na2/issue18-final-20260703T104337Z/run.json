@@ -1,0 +1,137 @@
+{
+  "case": {
+    "activation_semantics": {
+      "accounting": "separate per-pump start and stop budgets, each equal to NA_max",
+      "id": "epanet-bb-operative-separate-start-stop-budgets-v1",
+      "initialization": "explicit h=0 all-off state; h=0 -> h=1 transition is not charged",
+      "target": "operative-epanet-bb-artifacts"
+    },
+    "benchmark_identity": {
+      "family": "AnyTown Modified",
+      "source_of_truth": "docs/epanet-bb-source-of-truth-cases.json",
+      "target": "EPANET-BB paper case"
+    },
+    "case_id": "atm-24h-na2",
+    "gops_base_instance_key": "ATM e 24 1",
+    "horizon": {
+      "period_duration_hours": 1,
+      "periods": 24
+    },
+    "na_max": 2,
+    "pumps": [
+      {
+        "best_x_column": 0,
+        "epanet_id": "111",
+        "gops_arc": [
+          "R111",
+          "J20"
+        ],
+        "gops_id": "111"
+      },
+      {
+        "best_x_column": 1,
+        "epanet_id": "222",
+        "gops_arc": [
+          "R222",
+          "J20"
+        ],
+        "gops_id": "222"
+      },
+      {
+        "best_x_column": 2,
+        "epanet_id": "333",
+        "gops_arc": [
+          "R333",
+          "J20"
+        ],
+        "gops_id": "333"
+      }
+    ],
+    "tanks": {
+      "gops_representation": "explicit tanks T65, T165, and T265",
+      "target_ids": [
+        "65",
+        "165",
+        "265"
+      ]
+    }
+  },
+  "contract_version": "epanet-bb-equivalent-gops-v1",
+  "environment": {
+    "command": [
+      "run_epanet_bb_gops_experiment.py",
+      "atm-24h-na2",
+      "--run-class",
+      "final",
+      "--host-name",
+      "labma-sol",
+      "--run-id",
+      "issue18-final-20260703T104337Z",
+      "--execution-mode",
+      "lpnlpbb",
+      "--time-limit",
+      "60",
+      "--mip-gap",
+      "1e-6",
+      "--gurobi-output"
+    ],
+    "host_name": "labma-sol",
+    "platform": "Linux-6.12.90+deb13.1-amd64-x86_64-with-glibc2.41",
+    "python_version": "3.13.5 (main, May  5 2026, 21:05:52) [GCC 14.2.0]",
+    "run_class": "final",
+    "working_directory": "/home/michael/gitrepos/gopslpnlpbb"
+  },
+  "git": {
+    "branch": "bonvin-atm-audit",
+    "commit": "a864695f7857e8a507d4d9eea7e231f17cdddc4a",
+    "dirty": true,
+    "repository": "git@github.com:michaelsouza/gopslpnlpbb.git"
+  },
+  "model": {
+    "activation_semantics": "epanet-bb-operative-separate-start-stop-budgets-v1",
+    "binary_variables": 213,
+    "bounds": {
+      "path": "bounds/EpanetBB_Anytown.hdf",
+      "status": "missing_skipped"
+    },
+    "constraints": 206208,
+    "enforce_symmetric_ordering": false,
+    "instance": {
+      "basic": "EpanetBB_Anytown 2013-01-01 00:00:00 range(0, 24)",
+      "name": "EpanetBB_Anytown",
+      "network": "3 pumps, 0 valves, 3 tanks",
+      "period_duration_hours": 1.0,
+      "periods": 24
+    },
+    "integer_variables": 213,
+    "stop_variables": 69,
+    "variables": 1872
+  },
+  "outputs": {
+    "audit_json": null,
+    "root": "output/epanet_bb_equivalent_gops/atm-24h-na2/issue18-final-20260703T104337Z",
+    "run_manifest": "output/epanet_bb_equivalent_gops/atm-24h-na2/issue18-final-20260703T104337Z/run.json",
+    "schedule_json": null,
+    "solver_log": "output/epanet_bb_equivalent_gops/atm-24h-na2/issue18-final-20260703T104337Z/solver.log"
+  },
+  "runtime_settings": {
+    "adjust_mode": "plain",
+    "epsilon": 0.01,
+    "mip_gap": 1e-06,
+    "mode": "lpnlpbb",
+    "threads": null,
+    "time_limit_seconds": 60.0
+  },
+  "solver": {
+    "gurobi_version": "13.0.2",
+    "gurobipy_version": "13.0.2",
+    "license_status": "restricted",
+    "name": "Gurobi"
+  },
+  "status": {
+    "detail": "Model too large for size-limited license; visit https://gurobi.com/unrestricted for more information",
+    "run_status": "license_blocked",
+    "schedule_availability": "none"
+  },
+  "track": "epanet-bb-equivalent-gops"
+}
