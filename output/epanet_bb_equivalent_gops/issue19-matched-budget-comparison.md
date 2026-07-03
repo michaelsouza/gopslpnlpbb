@@ -20,6 +20,21 @@ Interpretation:
 - `NA_max = 2` and `NA_max = 3` produced complete commanded schedules and EPANET-BB audit artifacts, but their audited effective costs are higher than the corresponding Souza2026 paper schedules.
 - GOPS solver schedule costs are recorded in the JSON comparison as GOPS-run objective evidence; the table above uses EPANET-BB audit effective cost when a schedule was audited.
 
+## Cost Methodology
+
+The comparison table uses **EPANET-BB audit effective cost** whenever a GOPS schedule was audited. That is separate from the GOPS internal schedule cost.
+
+- GOPS internal cost: recorded as `reported_real_cost` in `run.json` and `best_cost` in `schedule.json`; it is computed by the GOPS model objective from commanded pump status and flow variables.
+- EPANET-BB audit cost: computed by replaying the GOPS `schedule.json` through the EPANET-BB fixed-schedule evaluator. The evaluator sums pump `adjustedTotalCost` values under EPANET-BB hydraulic simulation semantics and reports `effective_cost = effective_cost_raw / 100`.
+- Paper-facing delta: `GOPS audit effective_cost - Souza2026 best_cost`; percent delta divides that result by the Souza2026 paper cost.
+- If no complete commanded schedule exists, no audit-compatible GOPS cost is reported.
+
+| Case | NA_max | GOPS reported_real_cost | GOPS schedule best_cost | Audit raw cost | Audit effective cost | Audit units |
+| --- | --- | --- | --- | --- | --- | --- |
+| atm-24h-na1 | 1 | n/a | n/a | n/a | n/a | n/a |
+| atm-24h-na2 | 2 | 455.144 | 455.144 | 430181.424 | 4301.814 | input currency units |
+| atm-24h-na3 | 3 | 465.009 | 465.009 | 437952.982 | 4379.530 | input currency units |
+
 ## Paper Context
 
 The downstream source material contains schedule JSON artifacts for Costa2016, Cimorelli2020, Paola2025, and Souza2026 for each `NA_max` case:

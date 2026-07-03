@@ -166,6 +166,7 @@ def summarize_gops_case(
     na_max = int(run["case"]["na_max"])
     source_souza = next(item for item in paper_artifacts[na_max] if item["method"] == "Souza2026")
     audit_cost = audit.get("effective_cost") if audit else None
+    audit_cost_raw = audit.get("effective_cost_raw") if audit else None
     audit_feasible = audit.get("feasibility", {}).get("feasible") if audit else None
     audit_events = audit.get("event_counts") if audit else None
     solver_status = run["status"]
@@ -188,6 +189,8 @@ def summarize_gops_case(
             "schedule_cost": schedule.get("best_cost") if schedule else None,
             "schedule_duration_seconds": schedule.get("duration_seconds") if schedule else None,
             "audit_effective_cost": audit_cost,
+            "audit_effective_cost_raw": audit_cost_raw,
+            "audit_cost_units": audit.get("cost_units") if audit else None,
             "audit_feasible": audit_feasible,
             "audit_event_counts": audit_events,
         },
@@ -260,6 +263,21 @@ def build_comparison(source_path: Path, output_root: Path, run_id: str) -> dict[
             "mismatches": source["mismatches"],
             "pump_order": source["pumps"]["best_x_order"],
             "source_priority": source.get("source_priority"),
+        },
+        "cost_methodology": {
+            "comparison_cost": (
+                "The report compares GOPS schedules using EPANET-BB audit effective_cost when an audit exists."
+            ),
+            "gops_internal_cost": (
+                "GOPS schedule best_cost/reported_real_cost is retained as GOPS objective evidence, "
+                "but is not used as the paper-facing comparison cost because it is computed in the GOPS model."
+            ),
+            "audit_effective_cost": (
+                "The EPANET-BB audit applies the GOPS commanded schedule to the EPANET-BB hydraulic evaluator, "
+                "sums pump adjustedTotalCost values, and reports effective_cost_raw / 100 as effective_cost."
+            ),
+            "delta_formula": "delta = GOPS audit effective_cost - Souza2026 best_cost; delta_percent = delta / Souza2026 best_cost * 100.",
+            "no_schedule_policy": "If no complete commanded schedule exists, no audit-compatible GOPS cost is reported.",
         },
         "cases": cases,
     }
@@ -365,6 +383,50 @@ def _schedule_table(comparison: dict[str, Any]) -> str:
     )
 
 
+def _cost_methodology_section(comparison: dict[str, Any]) -> str:
+    rows = []
+    for case in comparison["cases"]:
+        gops = case["gops"]
+        has_schedule = gops["schedule_availability"] == "complete_commanded_schedule"
+        rows.append(
+            [
+                case["case_id"],
+                case["na_max"],
+                _format_number(gops["reported_real_cost"] if has_schedule else None),
+                _format_number(gops["schedule_cost"] if has_schedule else None),
+                _format_number(gops["audit_effective_cost_raw"]),
+                _format_number(gops["audit_effective_cost"]),
+                gops["audit_cost_units"] or "n/a",
+            ]
+        )
+    return "\n".join(
+        [
+            "## Cost Methodology",
+            "",
+            "The comparison table uses **EPANET-BB audit effective cost** whenever a GOPS schedule was audited. "
+            "That is separate from the GOPS internal schedule cost.",
+            "",
+            "- GOPS internal cost: recorded as `reported_real_cost` in `run.json` and `best_cost` in `schedule.json`; it is computed by the GOPS model objective from commanded pump status and flow variables.",
+            "- EPANET-BB audit cost: computed by replaying the GOPS `schedule.json` through the EPANET-BB fixed-schedule evaluator. The evaluator sums pump `adjustedTotalCost` values under EPANET-BB hydraulic simulation semantics and reports `effective_cost = effective_cost_raw / 100`.",
+            "- Paper-facing delta: `GOPS audit effective_cost - Souza2026 best_cost`; percent delta divides that result by the Souza2026 paper cost.",
+            "- If no complete commanded schedule exists, no audit-compatible GOPS cost is reported.",
+            "",
+            _markdown_table(
+                [
+                    "Case",
+                    "NA_max",
+                    "GOPS reported_real_cost",
+                    "GOPS schedule best_cost",
+                    "Audit raw cost",
+                    "Audit effective cost",
+                    "Audit units",
+                ],
+                rows,
+            ),
+        ]
+    )
+
+
 def _per_pump_schedule_table(comparison: dict[str, Any]) -> str:
     rows = []
     for case in comparison["cases"]:
@@ -441,6 +503,8 @@ def render_markdown(comparison: dict[str, Any]) -> str:
         "- `NA_max = 1` timed out under the matched 5-second budget without a complete GOPS commanded schedule, so no audit-compatible GOPS cost exists for that case.",
         "- `NA_max = 2` and `NA_max = 3` produced complete commanded schedules and EPANET-BB audit artifacts, but their audited effective costs are higher than the corresponding Souza2026 paper schedules.",
         "- GOPS solver schedule costs are recorded in the JSON comparison as GOPS-run objective evidence; the table above uses EPANET-BB audit effective cost when a schedule was audited.",
+        "",
+        _cost_methodology_section(comparison),
         "",
         "## Paper Context",
         "",

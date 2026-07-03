@@ -44,6 +44,7 @@ def test_build_comparison_summarizes_all_issue19_cases() -> None:
         "Paola2025",
         "Souza2026",
     ]
+    assert "audit_effective_cost" in comparison["cost_methodology"]
 
 
 def test_build_comparison_does_not_promote_na1_to_audited_schedule() -> None:
@@ -64,9 +65,11 @@ def test_build_comparison_uses_epanet_bb_audit_cost_for_schedule_cases() -> None
     na3 = comparison["cases"][2]
 
     assert na2["gops"]["audit_effective_cost"] == 4301.8142428452275
+    assert na2["gops"]["audit_effective_cost_raw"] == 430181.42428452277
     assert na2["gops"]["audit_feasible"] is True
     assert na2["cost_delta_vs_souza2026"]["audit_effective_cost_minus_paper"] > 0
     assert na3["gops"]["audit_effective_cost"] == 4379.529815587469
+    assert na3["gops"]["audit_effective_cost_raw"] == 437952.98155874683
     assert na3["gops"]["audit_feasible"] is True
     assert na3["cost_delta_vs_souza2026"]["audit_effective_cost_minus_paper"] > 0
 
@@ -81,5 +84,9 @@ def test_render_markdown_states_scope_and_paper_context() -> None:
     assert "Paola2025" in markdown
     assert "Souza2026" in markdown
     assert "`time_limit_no_schedule`" in markdown
+    assert "Cost Methodology" in markdown
+    assert "effective_cost = effective_cost_raw / 100" in markdown
+    assert "| atm-24h-na1 | 1 | n/a | n/a | n/a | n/a | n/a |" in markdown
+    assert "| atm-24h-na1 | 1 | 0 |" not in markdown
     assert "Per-Pump Commanded Schedules" in markdown
     assert "`100000000000000011110011`" in markdown
