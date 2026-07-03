@@ -454,8 +454,12 @@ def _audit_schedule(args: argparse.Namespace, paths: OutputPaths) -> dict[str, A
             "command": [],
         }
 
+    executable = [str(audit_binary)]
+    if os.name == "nt" and audit_binary.suffix.lower() not in {".bat", ".cmd", ".com", ".exe"}:
+        executable = [sys.executable, str(audit_binary)]
+
     command = [
-        str(audit_binary),
+        *executable,
         str((ROOT / paths.schedule_json).resolve()),
         str((ROOT / paths.audit_json).resolve()),
         "--zero-flow-threshold",

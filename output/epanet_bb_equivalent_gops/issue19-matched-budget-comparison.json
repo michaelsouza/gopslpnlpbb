@@ -1,0 +1,509 @@
+{
+  "artifact_type": "epanet-bb-equivalent-gops-paper-comparison",
+  "cases": [
+    {
+      "artifacts": {
+        "audit_json": null,
+        "run_json": "output/epanet_bb_equivalent_gops/atm-24h-na1/issue18-matched-budget-20260703T115137Z/run.json",
+        "schedule_json": null,
+        "solver_log": "output/epanet_bb_equivalent_gops/atm-24h-na1/issue18-matched-budget-20260703T115137Z/solver.log"
+      },
+      "case_id": "atm-24h-na1",
+      "cost_delta_vs_souza2026": {
+        "audit_effective_cost_minus_paper": null,
+        "audit_effective_cost_percent_delta": null
+      },
+      "gops": {
+        "audit_effective_cost": null,
+        "audit_event_counts": null,
+        "audit_feasible": null,
+        "gurobi_runtime_seconds": 5.002474784851074,
+        "mip_gap": "inf",
+        "objective_bound": 335.1473651125699,
+        "objective_value": "inf",
+        "reported_real_cost": 0,
+        "run_status": "time_limit_no_schedule",
+        "schedule_availability": "none",
+        "schedule_cost": null,
+        "schedule_duration_seconds": null,
+        "solution_count": 0,
+        "solver_status": "TIME_LIMIT",
+        "wall_time_seconds": 5.003
+      },
+      "na_max": 1,
+      "provenance": {
+        "branch": "bonvin-atm-audit",
+        "commit": "77bb8f6aeefc0986f93c5280faea521f30439790",
+        "dirty": false,
+        "host": "labma-sol",
+        "run_class": "final",
+        "runtime_settings": {
+          "adjust_mode": "plain",
+          "epsilon": 0.01,
+          "gurobi_license_file": "/home/michael/opt/gurobi1302/gurobi.lic",
+          "mip_gap": 1e-06,
+          "mode": "lpnlpbb",
+          "threads": null,
+          "time_limit_seconds": 5.0
+        },
+        "solver": {
+          "gurobi_version": "13.0.2",
+          "gurobipy_version": "13.0.2",
+          "license_file": "/home/michael/opt/gurobi1302/gurobi.lic",
+          "license_status": "valid",
+          "name": "Gurobi"
+        }
+      },
+      "runtime_delta_vs_souza2026": {
+        "gurobi_runtime_minus_paper": 1.3102437848510724,
+        "gurobi_runtime_percent_delta": 35.486506257356915
+      },
+      "schedule_behavior": {
+        "aggregate_hours_matching_souza2026": null,
+        "available": false,
+        "best_x_hamming_vs_souza2026": null,
+        "best_y_hamming_vs_souza2026": null,
+        "commanded_pump_hours": null,
+        "off_hours": null,
+        "operative_transition_counts": null,
+        "peak_pumps": null,
+        "pump_schedules_h1_to_h24": null,
+        "souza2026_commanded_pump_hours": 27,
+        "souza2026_pump_schedules_h1_to_h24": {
+          "111": "111111100000000000000111",
+          "222": "000011111111111100000000",
+          "333": "000000000000011111000000"
+        }
+      },
+      "souza2026": {
+        "artifact": "paper/data/run_Souza2026_a_01.json",
+        "best_cost": 3567.988684015254,
+        "duration_seconds": 3.692231000000002
+      }
+    },
+    {
+      "artifacts": {
+        "audit_json": "output/epanet_bb_equivalent_gops/atm-24h-na2/issue18-matched-budget-20260703T115137Z/audit.json",
+        "run_json": "output/epanet_bb_equivalent_gops/atm-24h-na2/issue18-matched-budget-20260703T115137Z/run.json",
+        "schedule_json": "output/epanet_bb_equivalent_gops/atm-24h-na2/issue18-matched-budget-20260703T115137Z/schedule.json",
+        "solver_log": "output/epanet_bb_equivalent_gops/atm-24h-na2/issue18-matched-budget-20260703T115137Z/solver.log"
+      },
+      "case_id": "atm-24h-na2",
+      "cost_delta_vs_souza2026": {
+        "audit_effective_cost_minus_paper": 828.923009644398,
+        "audit_effective_cost_percent_delta": 23.8683838330408
+      },
+      "gops": {
+        "audit_effective_cost": 4301.814242845227,
+        "audit_event_counts": {
+          "commanded_on_temp_closed": 0,
+          "commanded_on_zero_flow": 0,
+          "tank_boundary_contacts": 0,
+          "tank_clamp_events": 0,
+          "temporary_link_closures": 0
+        },
+        "audit_feasible": true,
+        "gurobi_runtime_seconds": 501.6403670310974,
+        "mip_gap": 0.045471409125049364,
+        "objective_bound": 339.4903372923342,
+        "objective_value": 355.6628272193992,
+        "reported_real_cost": 455.144256001663,
+        "run_status": "time_limit_with_schedule",
+        "schedule_availability": "complete_commanded_schedule",
+        "schedule_cost": 455.144256001663,
+        "schedule_duration_seconds": 392.9275050163269,
+        "solution_count": 3,
+        "solver_status": "TIME_LIMIT",
+        "wall_time_seconds": 501.641
+      },
+      "na_max": 2,
+      "provenance": {
+        "branch": "bonvin-atm-audit",
+        "commit": "77bb8f6aeefc0986f93c5280faea521f30439790",
+        "dirty": true,
+        "host": "labma-sol",
+        "run_class": "final",
+        "runtime_settings": {
+          "adjust_mode": "plain",
+          "epsilon": 0.01,
+          "gurobi_license_file": "/home/michael/opt/gurobi1302/gurobi.lic",
+          "mip_gap": 1e-06,
+          "mode": "lpnlpbb",
+          "threads": null,
+          "time_limit_seconds": 500.0
+        },
+        "solver": {
+          "gurobi_version": "13.0.2",
+          "gurobipy_version": "13.0.2",
+          "license_file": "/home/michael/opt/gurobi1302/gurobi.lic",
+          "license_status": "valid",
+          "name": "Gurobi"
+        }
+      },
+      "runtime_delta_vs_souza2026": {
+        "gurobi_runtime_minus_paper": 8.526020031097119,
+        "gurobi_runtime_percent_delta": 1.7290147980823427
+      },
+      "schedule_behavior": {
+        "aggregate_hours_matching_souza2026": 10,
+        "available": true,
+        "best_x_hamming_vs_souza2026": 35,
+        "best_y_hamming_vs_souza2026": 15,
+        "commanded_pump_hours": 27,
+        "off_hours": 1,
+        "operative_transition_counts": [
+          {
+            "pump": "111",
+            "starts_excluding_initial": 2,
+            "starts_including_initial": 3,
+            "stops_excluding_initial": 2,
+            "stops_including_initial": 2
+          },
+          {
+            "pump": "222",
+            "starts_excluding_initial": 2,
+            "starts_including_initial": 2,
+            "stops_excluding_initial": 2,
+            "stops_including_initial": 2
+          },
+          {
+            "pump": "333",
+            "starts_excluding_initial": 2,
+            "starts_including_initial": 2,
+            "stops_excluding_initial": 2,
+            "stops_including_initial": 2
+          }
+        ],
+        "peak_pumps": 2,
+        "pump_schedules_h1_to_h24": {
+          "111": "100000000000000011110011",
+          "222": "001000000001110000000000",
+          "333": "011111111111111100000100"
+        },
+        "souza2026_commanded_pump_hours": 32,
+        "souza2026_pump_schedules_h1_to_h24": {
+          "111": "111000000000011110001111",
+          "222": "111111111111000110000000",
+          "333": "000000111111000010000000"
+        }
+      },
+      "souza2026": {
+        "artifact": "paper/data/run_Souza2026_a_02.json",
+        "best_cost": 3472.8912332008294,
+        "duration_seconds": 493.1143470000003
+      }
+    },
+    {
+      "artifacts": {
+        "audit_json": "output/epanet_bb_equivalent_gops/atm-24h-na3/issue18-matched-budget-20260703T115137Z/audit.json",
+        "run_json": "output/epanet_bb_equivalent_gops/atm-24h-na3/issue18-matched-budget-20260703T115137Z/run.json",
+        "schedule_json": "output/epanet_bb_equivalent_gops/atm-24h-na3/issue18-matched-budget-20260703T115137Z/schedule.json",
+        "solver_log": "output/epanet_bb_equivalent_gops/atm-24h-na3/issue18-matched-budget-20260703T115137Z/solver.log"
+      },
+      "case_id": "atm-24h-na3",
+      "cost_delta_vs_souza2026": {
+        "audit_effective_cost_minus_paper": 936.0710944627817,
+        "audit_effective_cost_percent_delta": 27.18403704740931
+      },
+      "gops": {
+        "audit_effective_cost": 4379.529815587469,
+        "audit_event_counts": {
+          "commanded_on_temp_closed": 0,
+          "commanded_on_zero_flow": 0,
+          "tank_boundary_contacts": 0,
+          "tank_clamp_events": 0,
+          "temporary_link_closures": 0
+        },
+        "audit_feasible": true,
+        "gurobi_runtime_seconds": 10023.348985910416,
+        "mip_gap": 0.049677993158643165,
+        "objective_bound": 339.1549739258375,
+        "objective_value": 356.8842681578085,
+        "reported_real_cost": 465.00851547007426,
+        "run_status": "time_limit_with_schedule",
+        "schedule_availability": "complete_commanded_schedule",
+        "schedule_cost": 465.00851547007426,
+        "schedule_duration_seconds": 959.1674981117249,
+        "solution_count": 5,
+        "solver_status": "TIME_LIMIT",
+        "wall_time_seconds": 10023.349
+      },
+      "na_max": 3,
+      "provenance": {
+        "branch": "bonvin-atm-audit",
+        "commit": "77bb8f6aeefc0986f93c5280faea521f30439790",
+        "dirty": true,
+        "host": "labma-sol",
+        "run_class": "final",
+        "runtime_settings": {
+          "adjust_mode": "plain",
+          "epsilon": 0.01,
+          "gurobi_license_file": "/home/michael/opt/gurobi1302/gurobi.lic",
+          "mip_gap": 1e-06,
+          "mode": "lpnlpbb",
+          "threads": null,
+          "time_limit_seconds": 10020.0
+        },
+        "solver": {
+          "gurobi_version": "13.0.2",
+          "gurobipy_version": "13.0.2",
+          "license_file": "/home/michael/opt/gurobi1302/gurobi.lic",
+          "license_status": "valid",
+          "name": "Gurobi"
+        }
+      },
+      "runtime_delta_vs_souza2026": {
+        "gurobi_runtime_minus_paper": 12.120423910413592,
+        "gurobi_runtime_percent_delta": 0.12106829681643214
+      },
+      "schedule_behavior": {
+        "aggregate_hours_matching_souza2026": 11,
+        "available": true,
+        "best_x_hamming_vs_souza2026": 20,
+        "best_y_hamming_vs_souza2026": 14,
+        "commanded_pump_hours": 27,
+        "off_hours": 4,
+        "operative_transition_counts": [
+          {
+            "pump": "111",
+            "starts_excluding_initial": 2,
+            "starts_including_initial": 3,
+            "stops_excluding_initial": 3,
+            "stops_including_initial": 3
+          },
+          {
+            "pump": "222",
+            "starts_excluding_initial": 2,
+            "starts_including_initial": 3,
+            "stops_excluding_initial": 3,
+            "stops_including_initial": 3
+          },
+          {
+            "pump": "333",
+            "starts_excluding_initial": 3,
+            "starts_including_initial": 3,
+            "stops_excluding_initial": 3,
+            "stops_including_initial": 3
+          }
+        ],
+        "peak_pumps": 2,
+        "pump_schedules_h1_to_h24": {
+          "111": "100001111001100000000000",
+          "222": "111000000000001110111000",
+          "333": "010000011111111000000110"
+        },
+        "souza2026_commanded_pump_hours": 33,
+        "souza2026_pump_schedules_h1_to_h24": {
+          "111": "100000111111000010000000",
+          "222": "111000000000011110001100",
+          "333": "111111111111000110000110"
+        }
+      },
+      "souza2026": {
+        "artifact": "paper/data/run_Souza2026_a_03.json",
+        "best_cost": 3443.458721124687,
+        "duration_seconds": 10011.228562000002
+      }
+    }
+  ],
+  "contract_version": "epanet-bb-equivalent-gops-v1",
+  "issue": "michaelsouza/gopslpnlpbb#19",
+  "modeling_context": {
+    "activation_semantics": {
+      "description": "Per-pump starts and stops are budgeted separately; the initial h=0 to h=1 transition is not charged to either budget.",
+      "historical_count_loop": "BBSolver::computeAllowedSwitches loops i = 2; i < current_h; ++i",
+      "initial_state": "all pumps off at h=0",
+      "initial_transition_charged": false,
+      "manuscript_equation_conflict": "paper.tex states sum_{h=2..T} |x[j,h] - x[j,h-1]| <= NA_max, which is a total transition limit; operative code uses separate start/stop budgets.",
+      "per_pump_allowed_starts": "NA_max",
+      "per_pump_allowed_stops": "NA_max",
+      "pump_sorting": "Least Used Selection: switch-ons prefer remaining starts then stops; switch-offs prefer remaining stops then starts.",
+      "start_transition": "0_to_1",
+      "stop_transition": "1_to_0",
+      "target_name": "epanet-bb-operative-separate-start-stop-budgets-v1"
+    },
+    "experiment_scope": "EPANET-BB-equivalent GOPS adaptation on the AnyTown Modified paper assumptions; not a direct Bonvin public-artifact reproduction.",
+    "mismatches": [
+      {
+        "manuscript": "single total transition budget sum |x[j,h] - x[j,h-1]| <= NA_max",
+        "operative_target": "separate per-pump start and stop budgets, initial transition uncharged",
+        "topic": "actuation_semantics"
+      },
+      {
+        "manuscript": "44 pipes",
+        "operative_target": "41 INP pipe rows plus 3 pump rows",
+        "topic": "network_count_wording"
+      },
+      {
+        "best_x_order": [
+          "111",
+          "222",
+          "333"
+        ],
+        "inp_order": [
+          "222",
+          "111",
+          "333"
+        ],
+        "topic": "pump_order"
+      },
+      {
+        "artifact": "paper/data/comparison_summary.csv",
+        "conflicting_value": "EPANET-BB NA_max=3 cost 3444.71",
+        "operative_target": "paper/data/run_Souza2026_a_03.json cost 3443.458721124687",
+        "topic": "comparison_summary_cost"
+      }
+    ],
+    "pump_order": [
+      "111",
+      "222",
+      "333"
+    ],
+    "source_priority": [
+      "published schedule JSON artifacts",
+      "EPANET-BB code behavior",
+      "networks/any-town.inp",
+      "manuscript prose and equations when they do not conflict"
+    ]
+  },
+  "paper_context": {
+    "methods": [
+      "Costa2016",
+      "Cimorelli2020",
+      "Paola2025",
+      "Souza2026"
+    ],
+    "published_schedule_artifacts": {
+      "1": [
+        {
+          "NA_max": 1,
+          "best_cost": 3916.98,
+          "best_x_length": 75,
+          "best_y_length": 25,
+          "duration_seconds": 425,
+          "method": "Costa2016",
+          "path": "paper/data/run_Costa2016_a_01.json",
+          "sha256": "362f3d7df6269cbe316e7ef46d22a14d21499f6755ca6d01dbae64c41f973689"
+        },
+        {
+          "NA_max": 1,
+          "best_cost": 3634.67,
+          "best_x_length": 75,
+          "best_y_length": 25,
+          "duration_seconds": 663,
+          "method": "Cimorelli2020",
+          "path": "paper/data/run_Cimorelli2020_a_01.json",
+          "sha256": "c3fabf94139db6e152830118bac1a8a28a023ecd558f29982363ca356f48bb3e"
+        },
+        {
+          "NA_max": 1,
+          "best_cost": 3911.52,
+          "best_x_length": 75,
+          "best_y_length": 25,
+          "duration_seconds": 72,
+          "method": "Paola2025",
+          "path": "paper/data/run_Paola2025_a_01.json",
+          "sha256": "394d58f96d049a0e97356599f2b7dc262b83a11d9c6551042d43a4714c26641d"
+        },
+        {
+          "NA_max": 1,
+          "best_cost": 3567.988684015254,
+          "best_x_length": 75,
+          "best_y_length": 25,
+          "duration_seconds": 3.692231000000002,
+          "method": "Souza2026",
+          "path": "paper/data/run_Souza2026_a_01.json",
+          "sha256": "0b996d0539c60bc0c94a55518d8eae039957893983e173f6eafa19def22ccc38"
+        }
+      ],
+      "2": [
+        {
+          "NA_max": 2,
+          "best_cost": 3618.59,
+          "best_x_length": 75,
+          "best_y_length": 25,
+          "duration_seconds": 36914,
+          "method": "Costa2016",
+          "path": "paper/data/run_Costa2016_a_02.json",
+          "sha256": "22b80aaa742cc305fc381aa0e0a082868c815f6199551aae190a48b9bb191b64"
+        },
+        {
+          "NA_max": 2,
+          "best_cost": 3580.11,
+          "best_x_length": 75,
+          "best_y_length": 25,
+          "duration_seconds": 663,
+          "method": "Cimorelli2020",
+          "path": "paper/data/run_Cimorelli2020_a_02.json",
+          "sha256": "e27519e7f1a91e56db948cc60d436015d825ed8f312c6fefe6951ed35e31424d"
+        },
+        {
+          "NA_max": 2,
+          "best_cost": 3606.22,
+          "best_x_length": 75,
+          "best_y_length": 25,
+          "duration_seconds": 904,
+          "method": "Paola2025",
+          "path": "paper/data/run_Paola2025_a_02.json",
+          "sha256": "9cffa1d6715b3f0a982df57812d0db5479bb03526a967000022bc9e4e4eb4076"
+        },
+        {
+          "NA_max": 2,
+          "best_cost": 3472.8912332008294,
+          "best_x_length": 75,
+          "best_y_length": 25,
+          "duration_seconds": 493.1143470000003,
+          "method": "Souza2026",
+          "path": "paper/data/run_Souza2026_a_02.json",
+          "sha256": "4b912a0701d469521579f8e9f74f3d1f60f66d211e55ab343a1aec25694cfba6"
+        }
+      ],
+      "3": [
+        {
+          "NA_max": 3,
+          "best_cost": 3578.67,
+          "best_x_length": 75,
+          "best_y_length": 25,
+          "duration_seconds": 292032.0,
+          "method": "Costa2016",
+          "path": "paper/data/run_Costa2016_a_03.json",
+          "sha256": "c4634d9f10e1222c1fe84112057b39aae17ca1d31268d2aeb7a9b25d1fedf297"
+        },
+        {
+          "NA_max": 3,
+          "best_cost": 3575.54,
+          "best_x_length": 75,
+          "best_y_length": 25,
+          "duration_seconds": 663,
+          "method": "Cimorelli2020",
+          "path": "paper/data/run_Cimorelli2020_a_03.json",
+          "sha256": "cceaa06079051d78ea15907fe3ac06db13a2d53ca24aabcfd4d8c1a88d8ebbf0"
+        },
+        {
+          "NA_max": 3,
+          "best_cost": 3577.4,
+          "best_x_length": 75,
+          "best_y_length": 25,
+          "duration_seconds": 960,
+          "method": "Paola2025",
+          "path": "paper/data/run_Paola2025_a_03.json",
+          "sha256": "ad4d2ad0d5e96d7e56f12753602ea2ab939e1932437f708d749d95962bd6da1c"
+        },
+        {
+          "NA_max": 3,
+          "best_cost": 3443.458721124687,
+          "best_x_length": 75,
+          "best_y_length": 25,
+          "duration_seconds": 10011.228562000002,
+          "method": "Souza2026",
+          "path": "paper/data/run_Souza2026_a_03.json",
+          "sha256": "9f1b78b77bdfa0734927116f9781941e58114b72b51bc9a82457473ead43e9bc"
+        }
+      ]
+    }
+  },
+  "parent_prd": "michaelsouza/gopslpnlpbb#10",
+  "source_of_truth": "docs/epanet-bb-anytown-modified-source-of-truth.json",
+  "source_run_id": "issue18-matched-budget-20260703T115137Z",
+  "track": "epanet-bb-equivalent-gops"
+}
