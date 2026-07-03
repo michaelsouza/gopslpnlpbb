@@ -11,6 +11,7 @@ from run_epanet_bb_gops_experiment import (
     TRACK,
     _lpnlpbb_schedule_candidate,
     _make_schedule_artifact,
+    classify_license_status,
     classify_exception,
     make_case_metadata,
     make_output_paths,
@@ -372,6 +373,15 @@ def test_classify_license_exception() -> None:
 
     assert status["run_status"] == "license_blocked"
     assert status["schedule_availability"] == "none"
+
+
+def test_classify_size_limited_license_as_restricted() -> None:
+    assert (
+        classify_license_status(
+            "Model too large for size-limited license; visit https://gurobi.com/unrestricted for more information"
+        )
+        == "restricted"
+    )
 
 
 def test_final_run_on_non_labma_host_writes_blocked_manifest(tmp_path: Path) -> None:

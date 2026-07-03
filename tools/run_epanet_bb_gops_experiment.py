@@ -208,6 +208,19 @@ def classify_exception(exc: BaseException) -> dict[str, Any]:
     }
 
 
+def classify_license_status(message: str) -> str:
+    lowered = message.lower()
+    if "size-limited" in lowered or "restricted" in lowered:
+        return "restricted"
+    if "expired" in lowered:
+        return "expired"
+    if "hostid" in lowered:
+        return "hostid_mismatch"
+    if "no gurobi license" in lowered or "no license" in lowered or "not found" in lowered:
+        return "missing"
+    return "invalid"
+
+
 def _status_name(gp: Any, status: int | None) -> str | None:
     if status is None:
         return None
@@ -820,6 +833,8 @@ def run(args: argparse.Namespace, command: list[str]) -> int:
         exit_code = 0
     except Exception as exc:
         status = classify_exception(exc)
+        if status["run_status"] == "license_blocked":
+            solver = {**solver, "license_status": classify_license_status(status["detail"])}
         exit_code = 2 if status["run_status"] in {"environment_blocked", "license_blocked"} else 1
     finally:
         if model is not None:
