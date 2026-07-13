@@ -68,6 +68,11 @@ Only `final` runs should be used in the final comparison. A local run can help
 develop or test the path, but it is not final evidence unless a later ADR or
 issue explicitly promotes that policy.
 
+For the issue #20 six-hour evidence run, `final` additionally requires the
+`lpnlpbb` mode, a `21600` second time limit, and matching-case warm-start
+schedule and provenance inputs. A rejected translated candidate is recorded as
+a cold-start fallback rather than silently treated as an incumbent.
+
 An environment-readiness smoke run may use one representative case id while
 recording `applies_to_cases` for the full experiment surface. Such a smoke run
 checks repository, Python, and solver availability only; it may report
@@ -93,6 +98,7 @@ The source-of-truth benchmark extraction for the three cases is recorded in
 | Execution environment | host name, run class, working directory, Python version, command |
 | Solver | solver name, Gurobi version when available, `gurobipy` version when available, license status |
 | Runtime settings | time limit, MIP gap, GOPS mode/options, random seed if used |
+| Warm start | requested/accepted/rejected status, incumbent provenance, validation outcome, and GOPS-objective upper bound when used |
 | Status | run status, schedule availability, status detail |
 | Outputs | run manifest path, schedule path when present, audit path when present, solver log path when present |
 
@@ -186,6 +192,9 @@ A future validator or runner should reject an artifact when:
   is missing.
 - A run reports `success` or `time_limit_with_schedule` without a complete
   commanded schedule.
+- A warm-started run omits the source case, source run tag/commit, source
+  schedule path, acceptance/rejection outcome, or GOPS-objective value used as
+  the callback incumbent upper bound.
 - An environment-readiness smoke run reports a solver-result status such as
   `success` instead of `environment_ready`.
 - The artifact is named or stored as a Bonvin public-artifact sufficiency

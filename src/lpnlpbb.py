@@ -15,8 +15,9 @@ import graphic
 
 
 def _attach_callback_data(model, instance, adjust_mode):
-    model._incumbent = GRB.INFINITY
-    model._solutions = []
+    initial_solution = getattr(model, '_warm_start_solution', None)
+    model._incumbent = initial_solution['cost'] if initial_solution else GRB.INFINITY
+    model._solutions = [initial_solution] if initial_solution else []
     model._callbacktime = 0
     model._gaptol = model.Params.MIPGap  # 1e-2
     model._nperiods = instance.nperiods()
@@ -26,6 +27,82 @@ def _attach_callback_data(model, instance, adjust_mode):
     model._adjusttime = time.time()
     model._intnodes = {'unfeas': 0, 'feas': 0, 'adjust': 0}
     model._adjust_solutions = []
+
+
+def validate_and_install_warm_start(model, instance, plan):
+    """Validate a fixed activity plan and install it as the callback incumbent.
+
+    The LP-NLP B&B callback owns its incumbent independently of Gurobi's MIP
+    start machinery.  A candidate therefore has to pass the same extended
+    period hydraulic analysis used at integer leaves before it can become a
+    valid upper bound for callback pruning.
+    """
+
+    inactive = {
+        t: {arc for arc, active in plan[t].items() if not active}
+        for t in instance.horizon()
+    }
+    network = HydraulicNetwork(instance, model.Params.FeasibilityTol)
+    flows, _heads, volumes, violation = network.extended_period_analysis(inactive)
+    if violation:
+        return {
+            'accepted': False,
+            'reason': 'hydraulic_violation',
+            'violation': {
+                'period': violation[0][0],
+                'tank': violation[0][1],
+                'value': violation[0][2],
+            },
+        }
+
+    validation_model = model.copy()
+    try:
+        for key, variable in model._svar.items():
+            value = plan[key[1]][key[0]]
+            copied = validation_model.getVarByName(variable.VarName)
+            copied.lb = value
+            copied.ub = value
+        validation_model.Params.OutputFlag = 0
+        validation_model.Params.TimeLimit = min(model.Params.TimeLimit, 300)
+        validation_model.optimize()
+        model_feasible = validation_model.SolCount > 0
+        model_validation = {
+            'gurobi_status': validation_model.Status,
+            'solution_count': validation_model.SolCount,
+            'feasible': model_feasible,
+        }
+    finally:
+        validation_model.dispose()
+    if not model_feasible:
+        return {
+            'accepted': False,
+            'reason': 'gurobi_model_validation_failed',
+            'model_validation': model_validation,
+        }
+
+    cost = solutioncost(model, plan, flows)
+    solution = {
+        'plan': plan,
+        'cost': cost,
+        'flows': flows,
+        'volumes': volumes,
+        'cpu': 0.0,
+        'adjusted': False,
+        'warm_start': True,
+    }
+    model._warm_start_solution = solution
+    model._warm_start_base_model_feasible = True
+    model.addConstr(
+        model._obj <= (1 - model.Params.MIPGap) * cost,
+        name='warm_start_upper_bound',
+    )
+    model.update()
+    return {
+        'accepted': True,
+        'model_validation': model_validation,
+        'gops_objective_value': cost,
+        'cutoff_objective_value': (1 - model.Params.MIPGap) * cost,
+    }
 
 
 def mycallback(m, where):

@@ -10,6 +10,7 @@ from run_epanet_bb_gops_experiment import (
     CONTRACT_VERSION,
     TRACK,
     _lpnlpbb_schedule_candidate,
+    _load_warm_start,
     _make_schedule_artifact,
     classify_license_status,
     classify_exception,
@@ -152,6 +153,104 @@ def test_schedule_artifact_exports_epanet_bb_best_y_and_best_x() -> None:
     assert artifact["pump_mapping"]["best_x_order"] == ["111", "222", "333"]
     assert artifact["best_cost"] == 123.45
     assert artifact["duration_seconds"] == 6.7
+
+
+def test_warm_start_translates_epanet_bb_best_x_and_keeps_provenance(tmp_path: Path) -> None:
+    schedule_path = tmp_path / "best_global.json"
+    schedule_path.write_text(
+        json.dumps(
+            {
+                "track": "epanet-bb-warm-start-source-v1",
+                "case_id": "atm-24h-na1",
+                "na_max": 1,
+                "h_max": 24,
+                "max_actuations": 1,
+                "best_x": [0, 0, 0, *([1, 0, 0] * 24)],
+            }
+        ),
+        encoding="utf-8",
+    )
+    provenance_path = tmp_path / "provenance.json"
+    provenance_path.write_text(
+        json.dumps(
+            {
+                "source_issue": "michaelsouza/epanet-bb#22",
+                "run_tag": "labma-sol-20260705T170040Z-default-p64",
+                "epanet_bb_commit": "da60da9",
+                "case_id": "atm-24h-na1",
+                "na_max": 1,
+                "hydraulic_accuracy": 1e-4,
+                "feasibility_semantics": "default_epanet_simulated",
+                "best_artifact_path": str(schedule_path),
+            }
+        ),
+        encoding="utf-8",
+    )
+    args = parse_args(
+        [
+            "atm-24h-na1",
+            "--warm-start-schedule",
+            str(schedule_path),
+            "--warm-start-provenance",
+            str(provenance_path),
+        ]
+    )
+
+    warm_start = _load_warm_start(args, FakeInstance())
+
+    assert warm_start is not None
+    assert warm_start.plan[0][("R111", "J20")] == 1
+    assert warm_start.plan[0][("R222", "J20")] == 0
+    assert warm_start.metadata["provenance"]["run_tag"] == "labma-sol-20260705T170040Z-default-p64"
+
+
+def test_warm_start_requires_matching_case_provenance(tmp_path: Path) -> None:
+    schedule_path = tmp_path / "best_global.json"
+    schedule_path.write_text(
+        json.dumps(
+            {
+                "track": "epanet-bb-warm-start-source-v1",
+                "case_id": "atm-24h-na1",
+                "na_max": 1,
+                "h_max": 24,
+                "max_actuations": 1,
+                "best_x": [0, 0, 0, *([1, 0, 0] * 24)],
+            }
+        ),
+        encoding="utf-8",
+    )
+    provenance_path = tmp_path / "provenance.json"
+    provenance_path.write_text(
+        json.dumps(
+            {
+                "source_issue": "michaelsouza/epanet-bb#22",
+                "run_tag": "labma-sol-20260705T170040Z-default-p64",
+                "epanet_bb_commit": "da60da9",
+                "case_id": "atm-24h-na1",
+                "na_max": 2,
+                "hydraulic_accuracy": 1e-4,
+                "feasibility_semantics": "default_epanet_simulated",
+                "best_artifact_path": str(schedule_path),
+            }
+        ),
+        encoding="utf-8",
+    )
+    args = parse_args(
+        [
+            "atm-24h-na1",
+            "--warm-start-schedule",
+            str(schedule_path),
+            "--warm-start-provenance",
+            str(provenance_path),
+        ]
+    )
+
+    try:
+        _load_warm_start(args, FakeInstance())
+    except ValueError as exc:
+        assert "NA_max=2" in str(exc)
+    else:
+        raise AssertionError("expected mismatched warm-start provenance to be rejected")
 
 
 def test_adjusted_only_lpnlpbb_solution_is_not_promoted_to_schedule() -> None:
@@ -337,6 +436,37 @@ def test_final_run_audits_exported_schedule_and_records_audit_path(tmp_path: Pat
 
     monkeypatch.setattr(runner, "_build_model", fake_build_model)
     monkeypatch.setattr(runner, "_run_solver", fake_run_solver)
+    monkeypatch.setattr(runner.platform, "node", lambda: "sol")
+    warm_schedule = tmp_path / "warm-start.json"
+    warm_schedule.write_text(
+        json.dumps(
+            {
+                "track": "epanet-bb-warm-start-source-v1",
+                "case_id": "atm-24h-na1",
+                "na_max": 1,
+                "h_max": 24,
+                "max_actuations": 1,
+                "best_x": [0, 0, 0, *([1, 0, 0] * 24)],
+            }
+        ),
+        encoding="utf-8",
+    )
+    warm_provenance = tmp_path / "warm-start-provenance.json"
+    warm_provenance.write_text(
+        json.dumps(
+            {
+                "source_issue": "michaelsouza/epanet-bb#22",
+                "run_tag": "labma-sol-20260705T170040Z-default-p64",
+                "epanet_bb_commit": "3caddcc",
+                "case_id": "atm-24h-na1",
+                "na_max": 1,
+                "hydraulic_accuracy": 1e-4,
+                "feasibility_semantics": "default_epanet_simulated",
+                "best_artifact_path": str(warm_schedule),
+            }
+        ),
+        encoding="utf-8",
+    )
     args = parse_args(
         [
             "atm-24h-na1",
@@ -348,6 +478,12 @@ def test_final_run_audits_exported_schedule_and_records_audit_path(tmp_path: Pat
             "audited-run",
             "--execution-mode",
             "lpnlpbb",
+            "--time-limit",
+            "21600",
+            "--warm-start-schedule",
+            str(warm_schedule),
+            "--warm-start-provenance",
+            str(warm_provenance),
             "--output-root",
             str(tmp_path / "output"),
             "--audit-binary",
@@ -451,5 +587,5 @@ def test_final_run_on_non_labma_host_writes_blocked_manifest(tmp_path: Path) -> 
     assert exit_code == 2
     manifest = json.loads((tmp_path / "output" / "atm-24h-na1" / "blocked-final" / "run.json").read_text())
     assert manifest["environment"]["run_class"] == "final"
-    assert manifest["environment"]["host_name"] == "local-dev-host"
+    assert manifest["environment"]["host_name"] == "labma-sol"
     assert manifest["status"]["run_status"] == "environment_blocked"

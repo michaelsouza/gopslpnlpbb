@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import os
@@ -39,6 +40,18 @@ class ScheduleCandidate:
     detail: str
     artifact: dict[str, Any] | None
     summary: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class WarmStartInput:
+    plan: dict[int, dict[tuple[str, str], int]]
+    metadata: dict[str, Any]
+
+
+class WarmStartValidationError(ValueError):
+    def __init__(self, detail: str, metadata: dict[str, Any]) -> None:
+        super().__init__(detail)
+        self.metadata = metadata
 
 
 def _jsonable(value: Any) -> Any:
@@ -445,6 +458,121 @@ def _make_schedule_artifact(
     return artifact
 
 
+def _load_warm_start(args: argparse.Namespace, instance: Any) -> WarmStartInput | None:
+    if args.warm_start_schedule is None:
+        return None
+    if args.warm_start_provenance is None:
+        raise ValueError("--warm-start-provenance is required with --warm-start-schedule")
+
+    schedule_path = args.warm_start_schedule.resolve()
+    provenance_path = args.warm_start_provenance.resolve()
+    schedule_bytes = schedule_path.read_bytes()
+    schedule = json.loads(schedule_bytes)
+    provenance = json.loads(provenance_path.read_text(encoding="utf-8"))
+    case = make_case_metadata(args.case_id)
+    required_provenance = {
+        "source_issue",
+        "run_tag",
+        "epanet_bb_commit",
+        "case_id",
+        "na_max",
+        "hydraulic_accuracy",
+        "feasibility_semantics",
+        "best_artifact_path",
+    }
+    missing = sorted(required_provenance - set(provenance))
+    if missing:
+        raise ValueError(f"warm-start provenance is missing required fields: {', '.join(missing)}")
+    if provenance["source_issue"] != "michaelsouza/epanet-bb#22":
+        raise ValueError("warm-start provenance source_issue must be michaelsouza/epanet-bb#22")
+    if provenance["case_id"] != args.case_id:
+        raise ValueError(
+            f"warm-start provenance case_id={provenance['case_id']!r} does not match {args.case_id!r}"
+        )
+    if schedule.get("track") != "epanet-bb-warm-start-source-v1":
+        raise ValueError("warm-start schedule track must be epanet-bb-warm-start-source-v1")
+    if schedule.get("case_id") != args.case_id:
+        raise ValueError(f"warm-start schedule case_id={schedule.get('case_id')!r} does not match {args.case_id!r}")
+    if schedule.get("na_max") != case["na_max"]:
+        raise ValueError(
+            f"warm-start schedule na_max={schedule.get('na_max')!r} does not match NA_max={case['na_max']}"
+        )
+    if provenance["na_max"] != case["na_max"]:
+        raise ValueError(
+            f"warm-start provenance NA_max={provenance['na_max']} does not match {args.case_id}"
+        )
+    if schedule.get("h_max") != 24:
+        raise ValueError(f"warm-start schedule h_max={schedule.get('h_max')!r}; expected 24")
+    if schedule.get("max_actuations") != case["na_max"]:
+        raise ValueError(
+            f"warm-start schedule max_actuations={schedule.get('max_actuations')!r} "
+            f"does not match NA_max={case['na_max']}"
+        )
+    if Path(provenance["best_artifact_path"]).resolve() != schedule_path:
+        raise ValueError("warm-start provenance best_artifact_path does not identify the supplied schedule")
+
+    _ensure_src_imports()
+    from activation import EPANET_BB_PUMP_ORDER, split_best_x_by_pump, validate_epanet_bb_best_x
+
+    best_x = schedule.get("best_x")
+    if not isinstance(best_x, list):
+        raise ValueError("warm-start schedule has no best_x list")
+    validate_epanet_bb_best_x(best_x, na_max=case["na_max"], pump_order=EPANET_BB_PUMP_ORDER)
+    statuses = split_best_x_by_pump(best_x, EPANET_BB_PUMP_ORDER)
+    arc_by_pump = _pump_arc_by_epanet_id(instance, EPANET_BB_PUMP_ORDER)
+    periods = list(instance.horizon())
+    if len(periods) != 24:
+        raise ValueError(f"expected 24 GOPS periods, got {len(periods)}")
+    plan = {
+        period: {
+            arc_by_pump[pump_id]: statuses[pump_id][index + 1]
+            for pump_id in EPANET_BB_PUMP_ORDER
+        }
+        for index, period in enumerate(periods)
+    }
+    return WarmStartInput(
+        plan=plan,
+        metadata={
+            "mechanism": "lpnlpbb_callback_incumbent_upper_bound",
+            "source_schedule": str(schedule_path),
+            "source_schedule_sha256": hashlib.sha256(schedule_bytes).hexdigest(),
+            "source_provenance": str(provenance_path),
+            "provenance": provenance,
+            "translated_statuses_h1_to_h24": {
+                pump_id: "".join(str(value) for value in statuses[pump_id][1:])
+                for pump_id in EPANET_BB_PUMP_ORDER
+            },
+        },
+    )
+
+
+def _prepare_warm_start(args: argparse.Namespace, instance: Any, model: Any) -> dict[str, Any]:
+    try:
+        warm_start = _load_warm_start(args, instance)
+    except (OSError, json.JSONDecodeError, ValueError) as exc:
+        raise WarmStartValidationError(
+            str(exc),
+            {
+                "requested": True,
+                "status": "rejected",
+                "rejection_reason": "input_validation_failed",
+                "detail": str(exc),
+            },
+        ) from exc
+    if warm_start is None:
+        return {"requested": False, "status": "not_requested"}
+
+    import lpnlpbb as bb
+
+    outcome = bb.validate_and_install_warm_start(model, instance, warm_start.plan)
+    return {
+        "requested": True,
+        **warm_start.metadata,
+        "status": "accepted" if outcome["accepted"] else "rejected",
+        "validation": outcome,
+    }
+
+
 def _audit_schedule(args: argparse.Namespace, paths: OutputPaths) -> dict[str, Any]:
     audit_binary = args.audit_binary
     if not audit_binary.exists():
@@ -698,6 +826,8 @@ def _build_model(args: argparse.Namespace) -> tuple[Any, Any, Any, dict[str, Any
     if not args.gurobi_output:
         model.Params.OutputFlag = 0
 
+    warm_start_data = _prepare_warm_start(args, instance, model)
+
     model_data = {
         "instance": {
             "name": instance.name,
@@ -717,6 +847,7 @@ def _build_model(args: argparse.Namespace) -> tuple[Any, Any, Any, dict[str, Any
         "activation_semantics": model._activation_config.semantics,
         "enforce_symmetric_ordering": model._activation_config.enforce_symmetric_ordering,
         "stop_variables": len(model._stopvar),
+        "warm_start": warm_start_data,
     }
     return gp, instance, model, _solver_dict(gp, "valid"), model_data
 
@@ -763,11 +894,29 @@ def _run_solver(args: argparse.Namespace, gp: Any, instance: Any, model: Any) ->
     else:
         schedule_candidate = _no_schedule_candidate("execution mode does not solve for a commanded schedule")
 
-    run_status = _run_status_for_solver(gp, model.Status, schedule_candidate.schedule_availability)
+    retained_warm_start = getattr(model, "_warm_start_solution", None) is not None
+    cutoff_proved_no_improvement = (
+        args.execution_mode == "lpnlpbb"
+        and retained_warm_start
+        and getattr(model, "_warm_start_base_model_feasible", False)
+        and model.Status == gp.GRB.INFEASIBLE
+        and schedule_candidate.schedule_availability == "complete_commanded_schedule"
+    )
+    run_status = (
+        "success"
+        if cutoff_proved_no_improvement
+        else _run_status_for_solver(gp, model.Status, schedule_candidate.schedule_availability)
+    )
+    cutoff_detail = (
+        "; Gurobi proved the warm-start cutoff infeasible, so the validated incumbent remains the result"
+        if cutoff_proved_no_improvement
+        else ""
+    )
     status = {
         "run_status": run_status,
         "schedule_availability": schedule_candidate.schedule_availability,
-        "detail": f"solver status {status_name}; {schedule_candidate.detail}",
+        "detail": f"solver status {status_name}; {schedule_candidate.detail}{cutoff_detail}",
+        "warm_start_cutoff_proved_no_improvement": cutoff_proved_no_improvement,
         **status_metrics,
         "schedule_export": schedule_candidate.summary,
     }
@@ -801,7 +950,8 @@ def run(args: argparse.Namespace, command: list[str]) -> int:
 
     git_metadata = _git_metadata()
     (ROOT / paths.root).mkdir(parents=True, exist_ok=True)
-    host_name = args.host_name or platform.node()
+    actual_host_name = platform.node()
+    host_name = "labma-sol" if args.run_class == "final" else (args.host_name or actual_host_name)
     runtime_settings = {
         "time_limit_seconds": args.time_limit,
         "mip_gap": args.mip_gap,
@@ -812,7 +962,15 @@ def run(args: argparse.Namespace, command: list[str]) -> int:
         "gurobi_license_file": os.environ.get("GRB_LICENSE_FILE"),
     }
 
-    if args.run_class == "final" and host_name != "labma-sol":
+    final_configuration_errors = []
+    if args.run_class == "final":
+        if args.execution_mode != "lpnlpbb":
+            final_configuration_errors.append("final runs require --execution-mode lpnlpbb")
+        if args.time_limit != 21600:
+            final_configuration_errors.append("final runs require --time-limit 21600")
+        if args.warm_start_schedule is None or args.warm_start_provenance is None:
+            final_configuration_errors.append("final runs require warm-start schedule and provenance inputs")
+    if final_configuration_errors:
         manifest = make_run_manifest(
             case_id=args.case_id,
             run_class=args.run_class,
@@ -825,7 +983,28 @@ def run(args: argparse.Namespace, command: list[str]) -> int:
             status={
                 "run_status": "environment_blocked",
                 "schedule_availability": "none",
-                "detail": "final runs must identify labma-sol as host",
+                "detail": "; ".join(final_configuration_errors),
+            },
+            git_metadata=git_metadata,
+        )
+        _write_json(ROOT / paths.run_manifest, manifest)
+        print(f"wrote {paths.run_manifest}")
+        return 2
+
+    if args.run_class == "final" and actual_host_name != "sol":
+        manifest = make_run_manifest(
+            case_id=args.case_id,
+            run_class=args.run_class,
+            command=command,
+            paths=paths,
+            host_name=host_name,
+            working_directory=ROOT,
+            runtime_settings=runtime_settings,
+            solver=_solver_dict(),
+            status={
+                "run_status": "environment_blocked",
+                "schedule_availability": "none",
+                "detail": f"final runs must execute on sol; actual host was {actual_host_name!r}",
             },
             git_metadata=git_metadata,
         )
@@ -844,13 +1023,27 @@ def run(args: argparse.Namespace, command: list[str]) -> int:
         status, schedule_artifact = _run_solver(args, gp, instance, model)
         exit_code = 0
     except Exception as exc:
-        status = classify_exception(exc)
+        if isinstance(exc, WarmStartValidationError):
+            status = {
+                "run_status": "validation_failed",
+                "schedule_availability": "none",
+                "detail": str(exc),
+                "warm_start": exc.metadata,
+            }
+            model_data = {"warm_start": exc.metadata}
+        else:
+            status = classify_exception(exc)
         if status["run_status"] == "license_blocked":
             solver = {**solver, "license_status": classify_license_status(status["detail"])}
         exit_code = 2 if status["run_status"] in {"environment_blocked", "license_blocked"} else 1
+
     finally:
         if model is not None:
             model.dispose()
+
+    if model_data and model_data.get("warm_start", {}).get("status") == "rejected":
+        status["cold_start_fallback"] = True
+        status["warm_start_rejection_reason"] = model_data["warm_start"].get("rejection_reason")
 
     if schedule_artifact is not None:
         try:
@@ -919,6 +1112,18 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--threads", type=int, default=0)
     parser.add_argument("--require-bounds", action="store_true")
     parser.add_argument("--gurobi-output", action="store_true")
+    parser.add_argument(
+        "--warm-start-schedule",
+        type=Path,
+        default=None,
+        help="EPANET-BB best_global.json translated and validated as a GOPS callback incumbent",
+    )
+    parser.add_argument(
+        "--warm-start-provenance",
+        type=Path,
+        default=None,
+        help="JSON provenance for --warm-start-schedule, including the source #22 run metadata",
+    )
     parser.add_argument(
         "--gurobi-license-file",
         type=Path,
